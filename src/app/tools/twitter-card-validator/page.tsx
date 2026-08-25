@@ -97,7 +97,7 @@ export default function TwitterCardValidator() {
           </button>
         </form>
 
-        {/* Error Messages */}
+        {/* Error Message */}
         <AnimatePresence>
           {error && (
             <motion.div
