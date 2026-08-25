@@ -36,11 +36,12 @@ export default function Navbar() {
       >
         {/* Logo */}
         <div className="flex-1">
-          <Link href="/" className="text-xl md:text-2xl font-bold tracking-tight z-50 flex items-center gap-1.5 group">
-            <span className="text-foreground transition-colors group-hover:text-accent">Hop</span>
-            <span className="text-accent bg-accent/10 px-2.5 py-0.5 rounded-full border border-accent/20 shadow-[0_0_15px_rgba(var(--accent),0.1)] group-hover:shadow-[0_0_20px_rgba(var(--accent),0.2)] transition-shadow">
-              Up
-            </span>
+          <Link href="/" className="text-xl md:text-2xl font-bold tracking-tight z-50 flex items-center gap-2 group">
+            <img src="/hoplogo.png" alt="HopUp Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-sm group-hover:scale-105 transition-transform" />
+            <div className="flex items-baseline">
+              <span className="text-foreground">HopUp.</span>
+              <span className="text-accent">lol</span>
+            </div>
           </Link>
         </div>
 

@@ -17,6 +17,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://hopup.lol",
   },
+  icons: {
+    icon: "/hoplogo.png",
+  },
 };
 
 export default function RootLayout({

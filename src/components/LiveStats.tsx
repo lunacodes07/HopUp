@@ -90,7 +90,7 @@ export default function LiveStats() {
       initial={{ opacity: 0, y: -20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.6, type: "spring", bounce: 0.4 }}
-      className="inline-flex items-center gap-4 text-xs font-semibold text-secondary bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-border/50 shadow-sm mb-6"
+      className="inline-flex items-center gap-4 text-xs font-semibold text-secondary bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-border/50 shadow-sm"
     >
       <div className="flex items-center gap-1.5">
         <div className="relative flex items-center justify-center w-2 h-2">

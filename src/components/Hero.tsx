@@ -178,9 +178,26 @@ export default function Hero() {
     return countHigherOrEqual + 1;
   }, [bidAmount, leaderboardData, url]);
 
+  // Track a leaderboard click: optimistic UI bump + atomic server-side increment.
+  // Handles both primary clicks (onClick) and middle-clicks (onAuxClick),
+  // because browsers fire auxclick — not click — for non-primary buttons.
+  const trackClick = (item: Product) => {
+    setLeaderboardData((prev) =>
+      prev.map((p) => (p.id === item.id ? { ...p, clicks: p.clicks + 1 } : p))
+    );
+    supabase.rpc("increment_clicks", { p_product_id: item.id }).then(({ error }) => {
+      if (error) console.error("Failed to track click:", error.message);
+    });
+  };
+
   return (
-    <section className="relative w-full min-h-[90svh] flex flex-col lg:flex-row items-center justify-center px-6 md:px-12 pt-32 pb-20 overflow-hidden gap-12 lg:gap-16">
+    <section className="relative w-full min-h-[90svh] flex flex-col lg:flex-row items-center justify-center px-6 md:px-12 pt-40 md:pt-48 pb-20 overflow-hidden gap-12 lg:gap-16">
       
+      {/* Live Stats just below Navbar */}
+      <div className="absolute top-24 md:top-28 left-1/2 -translate-x-1/2 z-20 w-full flex justify-center px-4">
+        <LiveStats />
+      </div>
+
       {/* Top/Left Column - Leaderboard Visual */}
       <div className="w-full lg:w-[50%] relative z-10 flex flex-col items-center lg:items-end">
         <motion.div
@@ -224,8 +241,10 @@ export default function Hero() {
                     href={item.url && !item.url.startsWith('http') ? `https://${item.url}` : item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => {
-                      supabase.from("products").update({ clicks: item.clicks + 1 }).eq("id", item.id).then();
+                    onClick={() => trackClick(item)}
+                    onAuxClick={(e) => {
+                      // Middle-click ("open in new tab") fires auxclick, not click
+                      if (e.button === 1) trackClick(item);
                     }}
                     layout
                     initial={{ opacity: 0, y: 10 }}
@@ -286,18 +305,13 @@ export default function Hero() {
       </div>
 
       {/* Bottom/Right Column - Copy & Inline Form */}
-      <div className="w-full lg:w-[50%] flex flex-col justify-center z-10 lg:pl-10 mt-6 lg:mt-0">
-        
-        {/* Live Stats at the Top */}
-        <div className="flex justify-center lg:justify-start mb-6 w-full max-w-[500px] mx-auto lg:mx-0">
-          <LiveStats />
-        </div>
+      <div className="w-full lg:w-[50%] flex flex-col justify-center z-10 lg:pl-10 mt-12 lg:mt-0">
 
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-5xl md:text-6xl lg:text-[76px] font-bold leading-[1.05] tracking-tight text-foreground m-0 p-0 mb-6 text-center lg:text-left"
+          className="text-4xl md:text-5xl lg:text-[56px] font-bold leading-[1.1] tracking-tight text-foreground m-0 p-0 mb-6 text-center lg:text-left"
         >
           Your product <br className="hidden md:block" />
           deserves a <br className="hidden md:block" />

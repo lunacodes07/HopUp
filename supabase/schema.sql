@@ -28,6 +28,21 @@ INSERT INTO analytics (total_visits) VALUES (0);
 ALTER TABLE analytics ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access" ON analytics FOR SELECT USING (true);
 
+-- Create RPC to atomically increment a product's click counter.
+-- SECURITY DEFINER bypasses RLS so anonymous visitors can track clicks,
+-- and "clicks = clicks + 1" makes the increment atomic server-side
+-- (concurrent visitors can no longer overwrite each other's counts).
+CREATE OR REPLACE FUNCTION increment_clicks(p_product_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE products SET clicks = clicks + 1 WHERE id = p_product_id;
+END;
+$$;
+
+
 -- Create RPC to increment page views
 CREATE OR REPLACE FUNCTION increment_page_view()
 RETURNS void

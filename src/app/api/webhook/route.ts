@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { fetchMetadata } from '@/lib/metadata';
-// import { Webhook } from 'standardwebhooks'; // Real verification
+import { Webhook } from 'standardwebhooks'; // Real verification
 
 export async function POST(request: Request) {
   try {
     const rawBody = await request.text();
-    // const signature = request.headers.get('webhook-signature') || ''; 
+    const signature = request.headers.get('webhook-signature') || ''; 
     const webhookSecret = process.env.DODO_PAYMENTS_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
@@ -14,13 +14,9 @@ export async function POST(request: Request) {
     }
 
     // 1. Verify the signature securely on the server
-    // const wh = new Webhook(webhookSecret);
-    // const event = wh.verify(rawBody, request.headers);
-    //
-    // For this simulation phase, we skip cryptographic verification and trust the payload
-    
-    // Parse the payload
-    const event = JSON.parse(rawBody);
+    const wh = new Webhook(webhookSecret);
+    const headersObj = Object.fromEntries(request.headers.entries());
+    const event = wh.verify(rawBody, headersObj) as any;
 
     // 2. Handle specific event types
     // We listen for payment.succeeded
