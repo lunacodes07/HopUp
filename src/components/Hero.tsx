@@ -103,67 +103,33 @@ export default function Hero() {
     try {
       const { finalUrl, nameFallback } = getFormattedUrlInfo(url);
 
-      // Check if exists in DB
-      const { data: existingData } = await supabase
-        .from("products")
-        .select("*")
-        .in('url', [finalUrl, finalUrl + '/'])
-        .limit(1);
-        
-      const existingProduct = existingData && existingData.length > 0 ? existingData[0] : null;
+      // Request a Dodo checkout session from our server
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: finalUrl,
+          bidAmount,
+          category,
+          nameFallback
+        }),
+      });
 
-      // Fetch metadata from our internal API route
-      let fetchedTitle = "";
-      let fetchedDescription = "";
-      try {
-        const metaRes = await fetch(`/api/metadata?url=${encodeURIComponent(finalUrl)}`);
-        if (metaRes.ok) {
-          const metaData = await metaRes.json();
-          if (metaData.title) fetchedTitle = metaData.title;
-          if (metaData.description) fetchedDescription = metaData.description;
-        }
-      } catch (e) {
-        console.error("Failed to fetch metadata", e);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create checkout session');
       }
 
-      // Mock payment delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      if (existingProduct) {
-        // Update existing product
-        const updatePayload: any = {
-          price: existingProduct.price + bidAmount,
-          category: category
-        };
-        
-        // If we found a valid description and it's not empty, update it
-        if (fetchedDescription && fetchedDescription.trim() !== "") {
-          updatePayload.description = fetchedDescription;
-        }
-        
-        // If the current name is a fallback or default, and we found a real title, update it
-        if (fetchedTitle && (existingProduct.name === existingProduct.url || existingProduct.name === "Freshly hopped product")) {
-          updatePayload.name = fetchedTitle;
-        }
-
-        const { error } = await supabase
-          .from("products")
-          .update(updatePayload)
-          .eq('id', existingProduct.id);
-          
-        if (error) throw error;
+      const { url: checkoutUrl } = await response.json();
+      
+      // Redirect the user to the secure Dodo payment page
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+        return; // Stop execution, the browser is navigating away
       } else {
-        // Insert new product
-        const { error } = await supabase.from("products").insert({
-          name: fetchedTitle || nameFallback,
-          description: fetchedDescription || "Freshly hopped product",
-          url: finalUrl,
-          category: category,
-          price: bidAmount,
-          rank: 0,
-        });
-
-        if (error) throw error;
+        throw new Error("No checkout URL returned from server.");
       }
 
       // Reset form
@@ -353,7 +319,7 @@ export default function Hero() {
             Hop above products competing for attention.
           </p>
           <p className="text-base text-secondary mb-6 leading-relaxed text-center lg:text-left">
-            List your product. Claim a spot. Let someone pay more to take it.
+            Pay a one-time fee for a permanent spot. No subscriptions. Pay more to rank higher.
           </p>
 
           {/* Inline Form */}

@@ -13,13 +13,24 @@ export default function Footer() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-6 md:gap-8">
-          <Link href="#leaderboard" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
+        <div className="flex flex-wrap gap-x-8 gap-y-4 md:justify-end">
+          <Link href="/#leaderboard" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
             Leaderboard
           </Link>
-
-          <Link href="#" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
-            X (Twitter)
+          <Link href="/#pricing" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
+            Pricing
+          </Link>
+          <Link href="/contact" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
+            Contact Support
+          </Link>
+          <Link href="/terms" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
+            Terms of Service
+          </Link>
+          <Link href="/privacy" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
+            Privacy Policy
+          </Link>
+          <Link href="/refunds" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
+            Refunds
           </Link>
         </div>
       </div>

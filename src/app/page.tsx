@@ -4,6 +4,7 @@ import Hero from "@/components/Hero";
 import LiveLeaderboard from "@/components/LiveLeaderboard";
 import WhyFounders from "@/components/WhyFounders";
 
+import Pricing from "@/components/Pricing";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -15,6 +16,7 @@ export default function Home() {
 
         <LiveLeaderboard />
         <WhyFounders />
+        <Pricing />
 
       </main>
       <Footer />
