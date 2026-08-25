@@ -8,14 +8,29 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "HopUp — Pay to Hop Higher",
-  description: "List your product, claim a spot, and hop higher on a public leaderboard built for founders.",
+  metadataBase: new URL("https://www.hopup.lol"),
+  title: "HopUp — Your Product Deserves a Better Spot",
+  description: "List it. Hop up. Get noticed.",
   openGraph: {
     title: "HopUp — Your Product Deserves a Better Spot",
     description: "List it. Hop up. Get noticed.",
     type: "website",
     locale: "en_US",
-    url: "https://hopup.lol",
+    url: "https://www.hopup.lol",
+    images: [
+      {
+        url: "https://www.hopup.lol/og.png",
+        width: 1200,
+        height: 630,
+        alt: "HopUp",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "HopUp — Your Product Deserves a Better Spot",
+    description: "List it. Hop up. Get noticed.",
+    images: ["https://www.hopup.lol/og.png"],
   },
   icons: {
     icon: "/hoplogo.png",
