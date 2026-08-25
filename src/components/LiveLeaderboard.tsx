@@ -25,7 +25,7 @@ export default function LiveLeaderboard() {
           .select("*")
           .order("price", { ascending: false })
           .order("created_at", { ascending: true });
-          
+
         if (error) throw error;
         if (data) {
           const rankedData = data.map((item, idx) => ({ ...item, rank: idx + 1 }));
@@ -79,7 +79,7 @@ export default function LiveLeaderboard() {
 
   // Total Money Calculation and Animation
   const totalMoney = useMemo(() => leaderboardData.reduce((sum, item) => sum + item.price, 0), [leaderboardData]);
-  
+
   const hoursSinceLaunch = useMemo(() => {
     if (leaderboardData.length === 0) return 1;
     const earliestDate = Math.min(...leaderboardData.map(p => new Date(p.created_at || Date.now()).getTime()));
@@ -88,7 +88,7 @@ export default function LiveLeaderboard() {
   }, [leaderboardData]);
 
   const springValue = useSpring(0, { bounce: 0, duration: 2500 });
-  
+
   useEffect(() => {
     springValue.set(totalMoney);
   }, [totalMoney, springValue]);
@@ -112,8 +112,8 @@ export default function LiveLeaderboard() {
       <div className="w-full max-w-[1000px]">
         {/* Header */}
         <div className="flex flex-col mb-16 text-center items-center">
-          
-          <motion.div 
+
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -142,11 +142,10 @@ export default function LiveLeaderboard() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-300 ${
-                  activeCategory === cat
+                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-300 ${activeCategory === cat
                     ? "bg-foreground text-background shadow-md"
                     : "bg-transparent text-secondary hover:bg-muted"
-                }`}
+                  }`}
               >
                 {cat}
               </button>
@@ -197,19 +196,22 @@ export default function LiveLeaderboard() {
                       <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-muted text-secondary font-bold text-sm md:text-base flex-shrink-0">
                         {item.rank}
                       </div>
-                      
-                      {item.url && (
-                        <div className="relative flex-shrink-0">
+
+                      <div className="relative flex-shrink-0 w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl border border-border/50 shadow-sm overflow-hidden bg-muted flex items-center justify-center">
+                        {item.url ? (
                           <img 
-                            src={`https://www.google.com/s2/favicons?domain=${item.url.replace(/^https?:\/\//, '')}&sz=128`}
+                            src={`https://icon.horse/icon/${item.url.replace(/^https?:\/\//, '').split('/')[0]}`}
                             alt={`${item.name} logo`}
-                            className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-white object-cover border border-border/50 shadow-sm"
+                            className="absolute inset-0 w-full h-full object-cover bg-white"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).src = '/globe.svg';
+                              (e.target as HTMLImageElement).onerror = null; // Prevent infinite loop
                             }}
                           />
-                        </div>
-                      )}
+                        ) : (
+                          <img src="/globe.svg" alt="Default logo" className="w-6 h-6 md:w-8 md:h-8 opacity-50" />
+                        )}
+                      </div>
 
                       <div className="flex flex-col gap-1 ml-1">
                         <h3 className="text-lg font-bold tracking-tight text-foreground group-hover:text-accent transition-colors">
@@ -235,13 +237,13 @@ export default function LiveLeaderboard() {
                       <div className="text-xl md:text-2xl font-bold text-foreground">
                         ${item.price.toLocaleString()}
                       </div>
-                      
-                      <button 
+
+                      <button
                         onClick={(e) => {
                           e.preventDefault(); // Prevent navigating to the product URL
-                          
+
                           // Dispatch custom event to prefill the Hero form
-                          window.dispatchEvent(new CustomEvent('prefill-hop', { 
+                          window.dispatchEvent(new CustomEvent('prefill-hop', {
                             detail: { url: item.url, price: 2 } // Start with base bid
                           }));
 
@@ -264,7 +266,7 @@ export default function LiveLeaderboard() {
                   </motion.a>
                 ))}
               </AnimatePresence>
-              
+
               {filteredData.length === 0 && (
                 <div className="py-20 text-center flex flex-col items-center justify-center bg-white/50 border border-dashed border-border/50 rounded-3xl text-secondary">
                   <p className="text-base font-semibold mb-1">No products found</p>
@@ -291,11 +293,10 @@ export default function LiveLeaderboard() {
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${
-                            currentPage === page
+                          className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${currentPage === page
                               ? "bg-foreground text-background"
                               : "bg-transparent text-secondary hover:bg-muted"
-                          }`}
+                            }`}
                         >
                           {page}
                         </button>
