@@ -6,7 +6,7 @@ import { Search, ArrowRight, TrendingUp } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 
-const CATEGORIES = ["All", "AI", "DevTools", "Marketing", "Design", "Other"];
+const CATEGORIES = ["All", "AI / Builders", "AI Agents", "DevTools", "Marketing", "SEO", "Design", "Other"];
 
 export default function LiveLeaderboard() {
   const [activeCategory, setActiveCategory] = useState("All");
