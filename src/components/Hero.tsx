@@ -178,6 +178,18 @@ export default function Hero() {
     return countHigherOrEqual + 1;
   }, [bidAmount, leaderboardData, url]);
 
+  // Track a leaderboard click: optimistic UI bump + atomic server-side increment.
+  // Handles both primary clicks (onClick) and middle-clicks (onAuxClick),
+  // because browsers fire auxclick — not click — for non-primary buttons.
+  const trackClick = (item: Product) => {
+    setLeaderboardData((prev) =>
+      prev.map((p) => (p.id === item.id ? { ...p, clicks: p.clicks + 1 } : p))
+    );
+    supabase.rpc("increment_clicks", { p_product_id: item.id }).then(({ error }) => {
+      if (error) console.error("Failed to track click:", error.message);
+    });
+  };
+
   return (
     <section className="relative w-full min-h-[90svh] flex flex-col lg:flex-row items-center justify-center px-6 md:px-12 pt-32 pb-20 overflow-hidden gap-12 lg:gap-16">
       
@@ -224,8 +236,10 @@ export default function Hero() {
                     href={item.url && !item.url.startsWith('http') ? `https://${item.url}` : item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => {
-                      supabase.from("products").update({ clicks: item.clicks + 1 }).eq("id", item.id).then();
+                    onClick={() => trackClick(item)}
+                    onAuxClick={(e) => {
+                      // Middle-click ("open in new tab") fires auxclick, not click
+                      if (e.button === 1) trackClick(item);
                     }}
                     layout
                     initial={{ opacity: 0, y: 10 }}
