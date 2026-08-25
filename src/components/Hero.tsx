@@ -260,18 +260,21 @@ export default function Hero() {
                         {item.rank}
                       </div>
                       
-                      {item.url && (
-                        <div className="relative flex-shrink-0">
+                      <div className="relative flex-shrink-0 w-10 h-10 rounded-xl border border-border/50 shadow-sm overflow-hidden bg-muted flex items-center justify-center">
+                        {item.url ? (
                           <img 
-                            src={`https://www.google.com/s2/favicons?domain=${item.url.replace(/^https?:\/\//, '')}&sz=128`}
+                            src={`https://icon.horse/icon/${item.url.replace(/^https?:\/\//, '').split('/')[0]}`}
                             alt={`${item.name} logo`}
-                            className="w-10 h-10 rounded-xl bg-white object-cover border border-border/50 shadow-sm"
+                            className="absolute inset-0 w-full h-full object-cover bg-white"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).src = '/globe.svg';
+                              (e.target as HTMLImageElement).onerror = null; // Prevent infinite loop
                             }}
                           />
-                        </div>
-                      )}
+                        ) : (
+                          <img src="/globe.svg" alt="Default logo" className="w-5 h-5 opacity-50" />
+                        )}
+                      </div>
 
                       <div className="flex flex-col ml-1">
                         <span className={`font-semibold text-sm md:text-base hover:text-accent transition-colors ${isHighlighted ? 'text-foreground' : 'text-foreground/80'}`}>
