@@ -199,7 +199,7 @@ export default function Hero() {
     const { finalUrl } = getFormattedUrlInfo(url);
     
     const existingProduct = leaderboardData.find(
-      (p) => p.url.replace(/\/$/, '').toLowerCase() === finalUrl.toLowerCase()
+      (p) => p.url?.replace(/\/$/, '').toLowerCase() === finalUrl.toLowerCase()
     );
     
     const totalBid = existingProduct ? existingProduct.price + bidAmount : bidAmount;
