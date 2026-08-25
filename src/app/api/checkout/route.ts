@@ -1,9 +1,35 @@
 import { NextResponse } from 'next/server';
 import { dodo } from '@/lib/dodo';
 import { supabaseServer } from '@/lib/supabase-server';
+import { Redis } from '@upstash/redis';
+import { Ratelimit } from '@upstash/ratelimit';
+
+// Safely initialize Upstash Ratelimit only if the environment variables exist
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN 
+  ? Redis.fromEnv() 
+  : null;
+
+const ratelimit = redis ? new Ratelimit({
+  redis: redis,
+  limiter: Ratelimit.slidingWindow(5, '1 m'), // Allow 5 checkouts per minute per IP
+}) : null;
 
 export async function POST(request: Request) {
   try {
+    // 1. Rate Limiting Check
+    if (ratelimit) {
+      // Get the user's IP (works on Vercel)
+      const ip = request.headers.get('x-forwarded-for') ?? '127.0.0.1';
+      const { success } = await ratelimit.limit(`ratelimit_${ip}`);
+      
+      if (!success) {
+        return NextResponse.json(
+          { error: 'Too many checkout requests. Please try again in a minute.' }, 
+          { status: 429 }
+        );
+      }
+    }
+
     const { url, bidAmount, category, nameFallback } = await request.json();
 
     if (!url || !bidAmount || !category) {

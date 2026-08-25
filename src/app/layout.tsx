@@ -22,6 +22,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { Analytics } from "@vercel/analytics/react";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,6 +33,7 @@ export default function RootLayout({
     <html lang="en" className={`${outfit.variable} scroll-smooth`}>
       <body className="min-h-screen bg-background text-foreground antialiased selection:bg-accent/30 selection:text-foreground">
         {children}
+        <Analytics />
       </body>
     </html>
   );
