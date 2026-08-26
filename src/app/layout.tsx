@@ -32,6 +32,7 @@ export const metadata: Metadata = {
     description: "List it. Hop up. Get noticed.",
     images: ["https://www.hopup.lol/og.png"],
   },
+
   icons: {
     icon: "/hoplogo.png",
   },
