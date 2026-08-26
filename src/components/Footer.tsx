@@ -23,6 +23,7 @@ export default function Footer() {
           </Link>
           <Link href="/#pricing" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
             Pricing
+          </Link>
           <Link href="/contact" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
             Contact Support
           </Link>

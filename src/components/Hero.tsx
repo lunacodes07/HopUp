@@ -160,23 +160,54 @@ export default function Hero() {
 
   const expectedRank = useMemo(() => {
     if (leaderboardData.length === 0) return 1;
-    if (!url.trim()) return 1;
     
-    const { finalUrl } = getFormattedUrlInfo(url);
-    
-    const existingProduct = leaderboardData.find(
-      (p) => p.url?.replace(/\/$/, '').toLowerCase() === finalUrl.toLowerCase()
-    );
-    
-    const totalBid = existingProduct ? existingProduct.price + bidAmount : bidAmount;
+    let totalBid = bidAmount;
+    let existingProductId = null;
+
+    if (url.trim()) {
+      const { finalUrl } = getFormattedUrlInfo(url);
+      const existingProduct = leaderboardData.find(
+        (p) => p.url?.replace(/\/$/, '').toLowerCase() === finalUrl.toLowerCase()
+      );
+      if (existingProduct) {
+        totalBid = existingProduct.price + bidAmount;
+        existingProductId = existingProduct.id;
+      }
+    }
     
     const countHigherOrEqual = leaderboardData.filter(p => {
-      if (existingProduct && p.id === existingProduct.id) return false;
+      if (existingProductId && p.id === existingProductId) return false;
       return p.price >= totalBid;
     }).length;
     
     return countHigherOrEqual + 1;
   }, [bidAmount, leaderboardData, url]);
+
+  const amountForRank1 = useMemo(() => {
+    if (leaderboardData.length === 0) return 2;
+    
+    const topPrice = Math.max(...leaderboardData.map(p => p.price));
+    
+    let currentPrice = 0;
+    if (url.trim()) {
+      const { finalUrl } = getFormattedUrlInfo(url);
+      const existingProduct = leaderboardData.find(
+        (p) => p.url?.replace(/\/$/, '').toLowerCase() === finalUrl.toLowerCase()
+      );
+      if (existingProduct) {
+        currentPrice = existingProduct.price;
+        const othersTop = leaderboardData.filter(p => p.id !== existingProduct.id && p.price >= topPrice);
+        if (othersTop.length === 0 && currentPrice === topPrice) {
+           return 2;
+        }
+      }
+    }
+    
+    const requiredTotal = topPrice + 1;
+    const requiredAdditionalBid = requiredTotal - currentPrice;
+    
+    return Math.max(2, requiredAdditionalBid);
+  }, [leaderboardData, url]);
 
   // Track a leaderboard click: optimistic UI bump + atomic server-side increment.
   // Handles both primary clicks (onClick) and middle-clicks (onAuxClick),
@@ -391,7 +422,18 @@ export default function Hero() {
             <div className="flex flex-col gap-1.5 mb-2">
               <label className="text-xs font-semibold text-secondary ml-2 uppercase tracking-wide flex justify-between">
                 <span>Bid Amount</span>
-                <span className="text-accent-dark">Expected Rank: #{expectedRank}</span>
+                <div className="flex items-center gap-2">
+                  {expectedRank > 1 && (
+                    <button 
+                      type="button"
+                      onClick={() => setBidAmount(amountForRank1)}
+                      className="text-accent hover:underline lowercase tracking-normal"
+                    >
+                      get rank #1 for ${amountForRank1}
+                    </button>
+                  )}
+                  <span className="text-accent-dark">Expected Rank: #{expectedRank}</span>
+                </div>
               </label>
               <div className="flex items-center gap-3">
                 <button
