@@ -23,10 +23,6 @@ export default function Footer() {
           </Link>
           <Link href="/#pricing" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
             Pricing
-          </Link>
-          <Link href="/tools/twitter-card-validator" className="text-sm font-semibold text-accent hover:text-accent-dark transition-colors">
-            Twitter Card Validator
-          </Link>
           <Link href="/contact" className="text-sm font-semibold text-secondary hover:text-foreground transition-colors">
             Contact Support
           </Link>
