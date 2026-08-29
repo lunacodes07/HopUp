@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { ArrowRight, Tag, ArrowUpRight, Trophy } from 'lucide-react';
 import type { Product } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 const getLogoUrl = (url: string) => {
   if (!url) return '/globe.svg';
   try {
@@ -65,11 +67,13 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     .order('created_at', { ascending: true });
 
   if (error || !allProducts) {
+    console.error("ProductPage: supabaseServer error or !allProducts", error);
     return notFound();
   }
 
   const index = allProducts.findIndex(p => p.id === id);
   if (index === -1) {
+    console.warn(`ProductPage: Product with id ${id} not found in allProducts. Total products fetched: ${allProducts.length}`);
     return notFound();
   }
 
