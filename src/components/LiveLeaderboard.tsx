@@ -8,6 +8,23 @@ import type { Product } from "@/types";
 
 const CATEGORIES = ["All", "AI / Builders", "AI Agents", "DevTools", "Marketing", "SEO", "Design", "Other"];
 
+const getLogoUrl = (url: string) => {
+  if (!url) return '/globe.svg';
+  try {
+    const parsedUrl = new URL(url.startsWith('http') ? url : `https://${url}`);
+    const domain = parsedUrl.hostname.toLowerCase();
+    if (domain === 'x.com' || domain === 'twitter.com') {
+      const username = parsedUrl.pathname.split('/')[1];
+      if (username) {
+        return `https://unavatar.io/x/${username}`;
+      }
+    }
+  } catch (e) {
+    // Ignore invalid URLs
+  }
+  return `https://icon.horse/icon/${url.replace(/^https?:\/\//, '').split('/')[0]}`;
+};
+
 export default function LiveLeaderboard() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -176,9 +193,7 @@ export default function LiveLeaderboard() {
                 {paginatedData.map((item) => (
                   <motion.a
                     key={item.id}
-                    href={item.url && !item.url.startsWith('http') ? `https://${item.url}` : item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={`/p/${item.id}`}
                     onClick={() => trackClick(item)}
                     onAuxClick={(e) => {
                       // Middle-click ("open in new tab") fires auxclick, not click
@@ -200,7 +215,7 @@ export default function LiveLeaderboard() {
                       <div className="relative flex-shrink-0 w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl border border-border/50 shadow-sm overflow-hidden bg-muted flex items-center justify-center">
                         {item.url ? (
                           <img 
-                            src={`https://icon.horse/icon/${item.url.replace(/^https?:\/\//, '').split('/')[0]}`}
+                            src={getLogoUrl(item.url)}
                             alt={`${item.name} logo`}
                             className="absolute inset-0 w-full h-full object-cover bg-white"
                             onError={(e) => {

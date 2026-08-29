@@ -66,7 +66,8 @@ export async function POST(request: Request) {
       if (existingProduct) {
         const updatePayload: any = {
           price: existingProduct.price + bidAmount,
-          category: category
+          category: category,
+          last_hopped_at: new Date().toISOString()
         };
         
         if (fetchedDescription && fetchedDescription.trim() !== "") {
@@ -93,7 +94,8 @@ export async function POST(request: Request) {
           category: category,
           rank: 0,
           clicks: 0,
-          price: bidAmount
+          price: bidAmount,
+          last_hopped_at: new Date().toISOString()
         });
 
         if (error) throw error;

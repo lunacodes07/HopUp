@@ -68,8 +68,8 @@ export default function WhyFounders() {
         <div className="flex flex-col md:flex-row justify-center gap-10 md:gap-20 w-full relative bg-white border border-border/50 rounded-3xl p-10 shadow-sm">
           {[
             { value: totalClicks !== null ? totalClicks.toLocaleString() : "...", label: "Clicks generated" },
-            { value: "100+", label: "New signups" },
-            { value: "20+", label: "Demo calls" },
+            { value: "165+", label: "New signups" },
+            { value: "35+", label: "Demo calls" },
           ].map((metric, idx) => (
             <motion.div
               key={idx}
