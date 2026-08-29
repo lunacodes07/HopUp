@@ -24,6 +24,12 @@ const getTimeAgo = (dateString?: string) => {
   return `${diffInDays}d ago`;
 };
 
+const getShortName = (name: string) => {
+  const words = name.split(' ');
+  if (words.length <= 2) return name;
+  return `${words[0]} ${words[1]}...`;
+};
+
 export default function Ticker() {
   const [recentHops, setRecentHops] = useState<Product[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -101,8 +107,8 @@ export default function Ticker() {
           transition={{ duration: 0.3 }}
           className="flex items-center gap-1.5 whitespace-nowrap"
         >
-          <span className="text-foreground max-w-[100px] md:max-w-[150px] truncate">
-            {currentItem.name}
+          <span className="text-foreground max-w-[80px] md:max-w-[150px] truncate">
+            {getShortName(currentItem.name)}
           </span>
           <span className="opacity-75 font-normal">hopped</span>
           <span className="text-foreground/50 ml-0.5 font-normal">
