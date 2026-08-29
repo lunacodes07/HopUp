@@ -193,7 +193,9 @@ export default function LiveLeaderboard() {
                 {paginatedData.map((item) => (
                   <motion.a
                     key={item.id}
-                    href={`/p/${item.id}`}
+                    href={item.url && !item.url.startsWith('http') ? `https://${item.url}` : item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={() => trackClick(item)}
                     onAuxClick={(e) => {
                       // Middle-click ("open in new tab") fires auxclick, not click
