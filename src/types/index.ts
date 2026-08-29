@@ -8,4 +8,5 @@ export type Product = {
   price: number;
   url?: string;
   created_at?: string;
+  last_hopped_at?: string;
 };

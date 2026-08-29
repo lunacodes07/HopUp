@@ -8,7 +8,8 @@ CREATE TABLE products (
   category TEXT NOT NULL,
   clicks INTEGER DEFAULT 0 NOT NULL,
   price INTEGER NOT NULL,
-  url TEXT
+  url TEXT,
+  last_hopped_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- Allow public read access

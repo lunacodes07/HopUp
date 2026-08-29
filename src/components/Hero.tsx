@@ -6,6 +6,7 @@ import { ArrowRight, ArrowUp, Link as LinkIcon, Tag, Minus, Plus, Loader2 } from
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 import LiveStats from "./LiveStats";
+import Ticker from "./Ticker";
 
 const getFormattedUrlInfo = (rawUrl: string) => {
   let finalUrl = rawUrl.trim();
@@ -260,9 +261,12 @@ export default function Hero() {
     <section className="relative w-full min-h-[90svh] flex flex-col lg:flex-row items-center justify-center px-6 md:px-12 pt-40 md:pt-48 pb-20 overflow-hidden gap-12 lg:gap-16">
       
       {/* Live Stats just below Navbar */}
-      <div className="absolute top-24 md:top-28 left-1/2 -translate-x-1/2 z-20 w-full flex justify-center px-4">
+      <div className="absolute top-24 md:top-28 left-1/2 -translate-x-1/2 z-20 w-full flex flex-row justify-center items-center gap-2 md:gap-3 px-2">
         <LiveStats />
+        <Ticker />
       </div>
+
+
 
       {/* Top/Left Column - Leaderboard Visual */}
       <div className="w-full lg:w-[50%] relative z-10 flex flex-col items-center lg:items-end">
