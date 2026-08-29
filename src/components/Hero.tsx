@@ -11,17 +11,17 @@ import Ticker from "./Ticker";
 const getFormattedUrlInfo = (rawUrl: string) => {
   let finalUrl = rawUrl.trim();
   let nameFallback = finalUrl;
-  
+
   if (finalUrl.startsWith("@")) {
     finalUrl = `https://x.com/${finalUrl.substring(1)}`;
-    nameFallback = rawUrl; 
+    nameFallback = rawUrl;
   } else {
     if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://") && finalUrl.length > 0) {
-       finalUrl = "https://" + finalUrl;
+      finalUrl = "https://" + finalUrl;
     }
     nameFallback = finalUrl.replace(/^https?:\/\//, "").split("/")[0];
   }
-  
+
   finalUrl = finalUrl.replace(/\/$/, "");
   return { finalUrl, nameFallback };
 };
@@ -31,15 +31,15 @@ const getTimeAgo = (dateString?: string) => {
   const date = new Date(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
+
   if (diffInSeconds < 60) return 'just now';
-  
+
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-  
+
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) return `${diffInHours}h ago`;
-  
+
   const diffInDays = Math.floor(diffInHours / 24);
   return `${diffInDays}d ago`;
 };
@@ -78,7 +78,7 @@ export default function Hero() {
         .order("price", { ascending: false })
         .order("created_at", { ascending: true })
         .limit(10);
-        
+
       if (error) throw error;
       if (data) {
         // Map to include dynamic rank
@@ -118,7 +118,7 @@ export default function Hero() {
         setBidAmount(e.detail.price || 2);
       }
     };
-    
+
     window.addEventListener('prefill-hop', handlePrefill as EventListener);
     return () => window.removeEventListener('prefill-hop', handlePrefill as EventListener);
   }, []);
@@ -133,9 +133,9 @@ export default function Hero() {
   const handleHop = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url || isProcessing) return;
-    
+
     setIsProcessing(true);
-    
+
     try {
       const { finalUrl, nameFallback } = getFormattedUrlInfo(url);
 
@@ -159,7 +159,7 @@ export default function Hero() {
       }
 
       const { url: checkoutUrl } = await response.json();
-      
+
       // Redirect the user to the secure Dodo payment page
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
@@ -171,7 +171,7 @@ export default function Hero() {
       // Reset form
       setUrl("");
       setBidAmount(2);
-      
+
       // Immediately refetch data
       await fetchData();
 
@@ -196,7 +196,7 @@ export default function Hero() {
 
   const expectedRank = useMemo(() => {
     if (leaderboardData.length === 0) return 1;
-    
+
     let totalBid = bidAmount;
     let existingProductId = null;
 
@@ -210,20 +210,20 @@ export default function Hero() {
         existingProductId = existingProduct.id;
       }
     }
-    
+
     const countHigherOrEqual = leaderboardData.filter(p => {
       if (existingProductId && p.id === existingProductId) return false;
       return p.price >= totalBid;
     }).length;
-    
+
     return countHigherOrEqual + 1;
   }, [bidAmount, leaderboardData, url]);
 
   const amountForRank1 = useMemo(() => {
     if (leaderboardData.length === 0) return 2;
-    
+
     const topPrice = Math.max(...leaderboardData.map(p => p.price));
-    
+
     let currentPrice = 0;
     if (url.trim()) {
       const { finalUrl } = getFormattedUrlInfo(url);
@@ -234,14 +234,14 @@ export default function Hero() {
         currentPrice = existingProduct.price;
         const othersTop = leaderboardData.filter(p => p.id !== existingProduct.id && p.price >= topPrice);
         if (othersTop.length === 0 && currentPrice === topPrice) {
-           return 2;
+          return 2;
         }
       }
     }
-    
+
     const requiredTotal = topPrice + 1;
     const requiredAdditionalBid = requiredTotal - currentPrice;
-    
+
     return Math.max(2, requiredAdditionalBid);
   }, [leaderboardData, url]);
 
@@ -259,7 +259,7 @@ export default function Hero() {
 
   return (
     <section className="relative w-full min-h-[90svh] flex flex-col lg:flex-row items-center justify-center px-6 md:px-12 pt-40 md:pt-48 pb-20 overflow-hidden gap-12 lg:gap-16">
-      
+
       {/* Live Stats just below Navbar */}
       <div className="absolute top-24 md:top-28 left-1/2 -translate-x-1/2 z-20 w-full flex flex-row justify-center items-center gap-2 md:gap-3 px-2">
         <LiveStats />
@@ -277,7 +277,7 @@ export default function Hero() {
           className="w-full max-w-[540px] flex flex-col gap-2.5 relative"
         >
           <div className="absolute -inset-10 bg-gradient-to-tr from-accent/10 to-transparent blur-3xl -z-10 rounded-full" />
-          
+
           {isLoading ? (
             <div className="flex items-center justify-center h-64 text-secondary">Loading live data...</div>
           ) : leaderboardData.length === 0 ? (
@@ -290,10 +290,10 @@ export default function Hero() {
             <AnimatePresence mode="popLayout">
               {leaderboardData.slice(0, 10).map((item, idx) => {
                 const isHighlighted = idx === highlightedIndex;
-                
+
                 let rankStyle = "bg-white/60 backdrop-blur-sm border border-white/50 hover:bg-white/90 shadow-sm";
                 let badgeStyle = "bg-muted text-secondary";
-                
+
                 if (idx === 0) {
                   rankStyle = "bg-gradient-to-r from-amber-200/40 to-amber-100/10 border border-amber-300/50 shadow-lg shadow-amber-500/10";
                   badgeStyle = "bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 shadow-sm";
@@ -321,18 +321,17 @@ export default function Hero() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    className={`relative flex items-center justify-between p-3.5 rounded-2xl transition-all duration-500 cursor-pointer ${rankStyle} ${
-                      isHighlighted ? "scale-[1.03] z-10 shadow-xl shadow-accent/10 border-accent/20" : "scale-100"
-                    }`}
+                    className={`relative flex items-center justify-between p-3.5 rounded-2xl transition-all duration-500 cursor-pointer ${rankStyle} ${isHighlighted ? "scale-[1.03] z-10 shadow-xl shadow-accent/10 border-accent/20" : "scale-100"
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold flex-shrink-0 ${badgeStyle}`}>
                         {item.rank}
                       </div>
-                      
+
                       <div className="relative flex-shrink-0 w-10 h-10 rounded-xl border border-border/50 shadow-sm overflow-hidden bg-muted flex items-center justify-center">
                         {item.url ? (
-                          <img 
+                          <img
                             src={getLogoUrl(item.url)}
                             alt={`${item.name} logo`}
                             className="absolute inset-0 w-full h-full object-cover bg-white"
@@ -365,10 +364,26 @@ export default function Hero() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 md:gap-4">
                       <span className="font-semibold text-base md:text-lg">
                         ${item.price}
                       </span>
+
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const text = `Just claimed Rank #${item.rank} for ${item.name} on @alohaproxy 's HopUp for $${item.price}!`;
+                          const url = `https://hopup.lol`;
+                          window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+                        }}
+                        className="flex items-center justify-center p-2 rounded-full bg-black text-white hover:scale-105 active:scale-95 transition-all shadow-sm border border-white/20"
+                        title="Brag on X"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true" className="w-3 h-3 md:w-3.5 md:h-3.5 fill-current">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 22.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                        </svg>
+                      </button>
                       {isHighlighted && (
                         <div className="absolute -right-2 md:-right-6 -top-3 bg-foreground text-background text-[10px] md:text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-lg rotate-[4deg] animate-bounce-subtle">
                           Live now <ArrowUp className="w-3 h-3 text-accent" />
@@ -423,7 +438,7 @@ export default function Hero() {
                 <span className="font-semibold text-foreground text-sm">Processing Payment...</span>
               </div>
             )}
-            
+
             <div className="flex flex-col gap-1.5">
               <label htmlFor="url" className="text-xs font-semibold text-secondary ml-2 uppercase tracking-wide">Product Link</label>
               <div className="relative">
@@ -469,7 +484,7 @@ export default function Hero() {
                 <span>Bid Amount</span>
                 <div className="flex items-center gap-2">
                   {expectedRank > 1 && (
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setBidAmount(amountForRank1)}
                       className="text-accent hover:underline lowercase tracking-normal"
@@ -489,7 +504,7 @@ export default function Hero() {
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                
+
                 <div className="flex-1 h-12 flex items-center justify-center bg-white border border-border/50 rounded-full font-bold text-lg text-foreground shadow-inner relative overflow-hidden">
                   <span className="absolute left-4 md:left-6 text-foreground/50 select-none pointer-events-none">$</span>
                   <input
@@ -502,7 +517,7 @@ export default function Hero() {
                     style={{ MozAppearance: 'textfield' }} // hide arrows in firefox
                   />
                 </div>
-                
+
                 <button
                   type="button"
                   onClick={() => adjustBid(1)}
