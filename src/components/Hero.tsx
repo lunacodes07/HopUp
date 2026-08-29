@@ -43,6 +43,23 @@ const getTimeAgo = (dateString?: string) => {
   return `${diffInDays}d ago`;
 };
 
+const getLogoUrl = (url: string) => {
+  if (!url) return '/globe.svg';
+  try {
+    const parsedUrl = new URL(url.startsWith('http') ? url : `https://${url}`);
+    const domain = parsedUrl.hostname.toLowerCase();
+    if (domain === 'x.com' || domain === 'twitter.com') {
+      const username = parsedUrl.pathname.split('/')[1];
+      if (username) {
+        return `https://unavatar.io/x/${username}`;
+      }
+    }
+    return `https://icon.horse/icon/${domain}`;
+  } catch (e) {
+    return `https://icon.horse/icon/${url.replace(/^https?:\/\//, '').split('/')[0]}`;
+  }
+};
+
 export default function Hero() {
   const [highlightedIndex, setHighlightedIndex] = useState(3);
   const [url, setUrl] = useState("");
@@ -312,7 +329,7 @@ export default function Hero() {
                       <div className="relative flex-shrink-0 w-10 h-10 rounded-xl border border-border/50 shadow-sm overflow-hidden bg-muted flex items-center justify-center">
                         {item.url ? (
                           <img 
-                            src={`https://icon.horse/icon/${item.url.replace(/^https?:\/\//, '').split('/')[0]}`}
+                            src={getLogoUrl(item.url)}
                             alt={`${item.name} logo`}
                             className="absolute inset-0 w-full h-full object-cover bg-white"
                             onError={(e) => {
