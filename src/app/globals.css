@@ -13,10 +13,36 @@
   --color-white: #FFFFFF;
   
   --animate-marquee: marquee 30s linear infinite;
+  --animate-hof-shimmer: hof-shimmer 3.6s ease-in-out infinite;
+  --animate-hof-glow: hof-glow 2.8s ease-in-out infinite;
+  --animate-hof-sparkle: hof-sparkle 2.2s ease-in-out infinite;
+  --animate-hof-sheen: hof-sheen 5s ease-in-out infinite;
 
   @keyframes marquee {
     from { transform: translateX(0); }
     to { transform: translateX(-50%); }
+  }
+
+  @keyframes hof-shimmer {
+    0% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+    18% { opacity: 0.7; }
+    42% { opacity: 0.15; }
+    100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+  }
+
+  @keyframes hof-glow {
+    0%, 100% { opacity: 0.35; transform: scale(0.96); }
+    50% { opacity: 0.75; transform: scale(1.04); }
+  }
+
+  @keyframes hof-sparkle {
+    0%, 100% { opacity: 0.15; transform: scale(0.7); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes hof-sheen {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.85; }
   }
 }
 

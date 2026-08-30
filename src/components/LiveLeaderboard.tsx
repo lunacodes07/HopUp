@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, Fragment } from "react";
 import { motion, AnimatePresence, useSpring, useTransform } from "framer-motion";
-import { Search, ArrowRight } from "lucide-react";
+import { Search, ArrowRight, Crown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 
@@ -90,7 +90,19 @@ export default function LiveLeaderboard() {
     };
   }, []);
 
-  const filteredData = leaderboardData.filter((item) => {
+  const champion = useMemo(() => {
+    if (leaderboardData.length < 2) return null;
+    return leaderboardData[0];
+  }, [leaderboardData]);
+
+  const activeBoard = useMemo(() => {
+    if (!champion) return leaderboardData;
+    return leaderboardData
+      .filter((p) => p.id !== champion.id)
+      .map((item, idx) => ({ ...item, rank: idx + 1 }));
+  }, [leaderboardData, champion]);
+
+  const filteredData = activeBoard.filter((item) => {
     const matchesCategory =
       activeCategory === "All" || (item.category || "").toLowerCase().includes(activeCategory.toLowerCase());
     const query = searchQuery.toLowerCase();
@@ -170,6 +182,84 @@ export default function LiveLeaderboard() {
   return (
     <section id="leaderboard" className="w-full px-4 md:px-8 pt-4 pb-20 flex flex-col items-center">
       <div className="w-full max-w-[1000px]">
+        {champion && (
+          <div className="relative mb-7">
+            <div className="absolute -inset-3 md:-inset-4 rounded-3xl bg-gradient-to-r from-amber-300/40 via-yellow-200/25 to-transparent blur-2xl animate-hof-glow pointer-events-none" />
+            <div className="absolute -top-1 left-[12%] w-1.5 h-1.5 rounded-full bg-amber-200 shadow-[0_0_10px_3px_rgba(251,191,36,0.7)] animate-hof-sparkle pointer-events-none" />
+            <div className="absolute top-2 right-[22%] w-1 h-1 rounded-full bg-yellow-100 shadow-[0_0_8px_2px_rgba(253,224,71,0.8)] animate-hof-sparkle pointer-events-none [animation-delay:0.7s]" />
+            <div className="absolute bottom-3 left-[38%] w-1 h-1 rounded-full bg-amber-100 shadow-[0_0_8px_2px_rgba(251,191,36,0.75)] animate-hof-sparkle pointer-events-none [animation-delay:1.3s]" />
+
+            <p className="relative flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-800 mb-2">
+              <Crown className="w-3.5 h-3.5 fill-amber-400 text-amber-600" />
+              Hall of Fame
+            </p>
+
+            <a
+              href={champion.url && !champion.url.startsWith("http") ? `https://${champion.url}` : champion.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackClick(champion)}
+              onAuxClick={(e) => {
+                if (e.button === 1) trackClick(champion);
+              }}
+              className="group relative overflow-hidden flex items-center gap-3 md:gap-4 py-4 px-3 md:px-4 rounded-2xl border border-amber-400/80 bg-gradient-to-r from-amber-200/80 via-yellow-50/70 to-white shadow-[0_0_0_1px_rgba(251,191,36,0.35),0_12px_40px_-12px_rgba(217,119,6,0.55)]"
+            >
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-amber-200/20 animate-hof-sheen" />
+              <div className="pointer-events-none absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/70 to-transparent animate-hof-shimmer" />
+
+              <div className="relative shrink-0">
+                <div className="absolute -inset-1.5 rounded-2xl bg-amber-300/50 blur-md animate-hof-glow" />
+                <div className="relative w-14 h-14 rounded-2xl overflow-hidden bg-white ring-2 ring-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.55)]">
+                  {champion.url ? (
+                    <img
+                      src={getLogoUrl(champion.url)}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover bg-white"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/globe.svg";
+                        (e.target as HTMLImageElement).onerror = null;
+                      }}
+                    />
+                  ) : (
+                    <img src="/globe.svg" alt="" className="w-6 h-6 m-auto mt-4 opacity-40" />
+                  )}
+                </div>
+                <Crown className="absolute -top-2 -right-1.5 w-4 h-4 fill-amber-400 text-amber-700 drop-shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
+              </div>
+
+              <div className="relative flex-1 min-w-0">
+                <div className="flex items-baseline gap-2 min-w-0">
+                  <h3 className="text-[16px] md:text-[18px] font-semibold tracking-tight text-amber-950 truncate group-hover:text-amber-800 transition-colors">
+                    {champion.name}
+                  </h3>
+                  <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-amber-400/30 border border-amber-500/40 text-[10px] font-bold uppercase tracking-wide text-amber-900">
+                    Unchallenged
+                  </span>
+                </div>
+                <p className="text-[12px] text-amber-900/60 truncate max-w-[520px]">
+                  {champion.description}
+                </p>
+                <p className="text-[11px] text-amber-800/70 mt-0.5">
+                  {(champion.clicks || 0).toLocaleString()} clicks
+                  {champion.created_at && (
+                    <>
+                      {" · "}
+                      {getTimeAgo(champion.last_hopped_at || champion.created_at)}
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div className="relative shrink-0 text-right">
+                <div className="text-[18px] md:text-[20px] font-semibold tabular-nums text-amber-900 drop-shadow-[0_0_10px_rgba(251,191,36,0.45)]">
+                  ${champion.price.toLocaleString()}
+                </div>
+                <div className="text-[11px] font-medium text-amber-800/80">enshrined</div>
+              </div>
+            </a>
+          </div>
+        )}
+
         <div className="flex items-end justify-between gap-3 mb-3 sm:mb-5">
           <div className="min-w-0">
             <h2 className="text-lg sm:text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
