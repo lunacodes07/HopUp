@@ -1,28 +1,45 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Fragment } from "react";
 import { motion, AnimatePresence, useSpring, useTransform } from "framer-motion";
-import { Search, ArrowRight, TrendingUp } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 
 const CATEGORIES = ["All", "AI / Builders", "AI Agents", "DevTools", "Marketing", "SEO", "Design", "Other"];
 
 const getLogoUrl = (url: string) => {
-  if (!url) return '/globe.svg';
+  if (!url) return "/globe.svg";
   try {
-    const parsedUrl = new URL(url.startsWith('http') ? url : `https://${url}`);
+    const parsedUrl = new URL(url.startsWith("http") ? url : `https://${url}`);
     const domain = parsedUrl.hostname.toLowerCase();
-    if (domain === 'x.com' || domain === 'twitter.com') {
-      const username = parsedUrl.pathname.split('/')[1];
+    if (domain === "x.com" || domain === "twitter.com") {
+      const username = parsedUrl.pathname.split("/")[1];
       if (username) {
         return `https://unavatar.io/x/${username}`;
       }
     }
-  } catch (e) {
+  } catch {
     // Ignore invalid URLs
   }
-  return `https://icon.horse/icon/${url.replace(/^https?:\/\//, '').split('/')[0]}`;
+  return `https://icon.horse/icon/${url.replace(/^https?:\/\//, "").split("/")[0]}`;
+};
+
+const getTimeAgo = (dateString?: string) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const diffInSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "just now";
+
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}h ago`;
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  return `${diffInDays}d ago`;
 };
 
 export default function LiveLeaderboard() {
@@ -57,14 +74,13 @@ export default function LiveLeaderboard() {
 
     fetchData();
 
-    // Subscribe to realtime changes
     const subscription = supabase
       .channel("products_changes_full")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "products" },
         () => {
-          fetchData(); // Refetch on any change
+          fetchData();
         }
       )
       .subscribe();
@@ -76,10 +92,11 @@ export default function LiveLeaderboard() {
 
   const filteredData = leaderboardData.filter((item) => {
     const matchesCategory =
-      activeCategory === "All" || item.category.toLowerCase().includes(activeCategory.toLowerCase());
+      activeCategory === "All" || (item.category || "").toLowerCase().includes(activeCategory.toLowerCase());
+    const query = searchQuery.toLowerCase();
     const matchesSearch =
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (item.name || "").toLowerCase().includes(query) ||
+      (item.description || "").toLowerCase().includes(query);
     return matchesCategory && matchesSearch;
   });
 
@@ -89,17 +106,30 @@ export default function LiveLeaderboard() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Reset to page 1 when search or category changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, activeCategory]);
 
-  // Total Money Calculation and Animation
-  const totalMoney = useMemo(() => leaderboardData.reduce((sum, item) => sum + item.price, 0), [leaderboardData]);
+  const latestActivity = useMemo(() => {
+    return [...leaderboardData]
+      .sort((a, b) => {
+        const aTime = new Date(a.last_hopped_at || a.created_at || 0).getTime();
+        const bTime = new Date(b.last_hopped_at || b.created_at || 0).getTime();
+        return bTime - aTime;
+      })
+      .slice(0, 3);
+  }, [leaderboardData]);
+
+  const totalMoney = useMemo(
+    () => leaderboardData.reduce((sum, item) => sum + item.price, 0),
+    [leaderboardData]
+  );
 
   const hoursSinceLaunch = useMemo(() => {
     if (leaderboardData.length === 0) return 1;
-    const earliestDate = Math.min(...leaderboardData.map(p => new Date(p.created_at || Date.now()).getTime()));
+    const earliestDate = Math.min(
+      ...leaderboardData.map((p) => new Date(p.created_at || Date.now()).getTime())
+    );
     const msSince = Date.now() - earliestDate;
     return Math.max(1, Math.floor(msSince / (1000 * 60 * 60)));
   }, [leaderboardData]);
@@ -121,209 +151,325 @@ export default function LiveLeaderboard() {
     });
   };
 
+  const hopThis = (item: Product, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.dispatchEvent(
+      new CustomEvent("prefill-hop", {
+        detail: { url: item.url, price: 2 },
+      })
+    );
+    const hopSection = document.getElementById("submit");
+    if (hopSection) {
+      hopSection.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   return (
-    <section
-      id="leaderboard"
-      className="w-full bg-background py-32 px-6 md:px-12 flex flex-col items-center"
-    >
+    <section id="leaderboard" className="w-full px-4 md:px-8 pt-4 pb-20 flex flex-col items-center">
       <div className="w-full max-w-[1000px]">
-        {/* Header */}
-        <div className="flex flex-col mb-16 text-center items-center">
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex flex-col md:flex-row items-center gap-2 md:gap-3 px-6 py-3 bg-accent/10 border border-accent/20 rounded-full mb-8"
-          >
-            <div className="flex items-center gap-2 text-accent-dark font-semibold text-sm md:text-base">
-              <TrendingUp className="w-5 h-5" />
-              <span>This website made</span>
-              <motion.span className="text-xl md:text-2xl font-bold font-mono">{displayMoney}</motion.span>
-              <span>since launch {hoursSinceLaunch} hours ago</span>
-            </div>
-          </motion.div>
-
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-foreground mb-4">
-            Who's up?
-          </h2>
-          <p className="text-lg md:text-xl text-secondary font-medium max-w-2xl text-balance">
-            The internet's most unnecessary competition.
+        <div className="flex items-end justify-between gap-3 mb-3 sm:mb-5">
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
+              Who&apos;s up
+            </h2>
+            <p className="hidden sm:block text-base text-secondary mt-1">
+              The internet&apos;s most unnecessary competition.
+            </p>
+          </div>
+          <p className="shrink-0 text-[12px] sm:text-sm text-secondary text-right pb-0.5">
+            made{" "}
+            <motion.span className="font-semibold text-accent-dark font-mono tabular-nums">
+              {displayMoney}
+            </motion.span>
+            <span className="hidden sm:inline">
+              {" "}in {hoursSinceLaunch} {hoursSinceLaunch === 1 ? "hour" : "hours"}
+            </span>
           </p>
         </div>
 
-        {/* Controls */}
-        <div className="flex flex-col md:flex-row gap-6 justify-between items-center mb-12 bg-white p-4 rounded-3xl shadow-sm border border-border/50">
-          <div className="flex flex-wrap gap-2 w-full md:w-auto justify-center md:justify-start">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-300 ${activeCategory === cat
-                    ? "bg-foreground text-background shadow-md"
-                    : "bg-transparent text-secondary hover:bg-muted"
+        <div className="flex items-center gap-4 mb-2 border-b border-border/70">
+          <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-0.5 w-max pr-2">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`relative shrink-0 px-3 py-2.5 text-[13px] font-medium transition-colors ${
+                    activeCategory === cat
+                      ? "text-foreground"
+                      : "text-secondary hover:text-foreground"
                   }`}
-              >
-                {cat}
-              </button>
-            ))}
+                >
+                  {cat}
+                  {activeCategory === cat && (
+                    <motion.span
+                      layoutId="category-underline"
+                      className="absolute left-3 right-3 -bottom-px h-[2px] bg-accent rounded-full"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="relative w-full md:w-[280px]">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary/70" />
+          <div className="relative shrink-0 hidden sm:block w-[180px] mb-1.5">
+            <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-secondary/70" />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-muted/50 border border-border/50 rounded-full focus:outline-none focus:ring-2 focus:ring-accent/50 focus:bg-white text-sm font-medium transition-all"
+              className="w-full pl-5 pr-1 py-1.5 bg-transparent border-b border-transparent focus:border-accent/50 outline-none text-[13px] font-medium placeholder:text-secondary/50 transition-colors"
             />
           </div>
         </div>
 
-        {/* Leaderboard List */}
-        <div className="flex flex-col gap-4 min-h-[400px]">
+        <div className="relative sm:hidden mb-3">
+          <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-secondary/70" />
+          <input
+            type="text"
+            placeholder="Search products"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-5 pr-1 py-2 bg-transparent border-b border-border/50 outline-none text-[13px] font-medium placeholder:text-secondary/50"
+          />
+        </div>
+
+        <div className="flex flex-col min-h-[280px]">
           {isLoading ? (
-            <div className="py-20 text-center flex flex-col items-center justify-center bg-white/50 border border-dashed border-border/50 rounded-3xl text-secondary">
-              <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin mb-4"></div>
-              <p className="text-base font-semibold">Loading live leaderboard...</p>
-            </div>
+            <div className="py-16 text-center text-secondary text-sm">Loading live leaderboard...</div>
           ) : (
             <>
               <AnimatePresence mode="popLayout">
-                {paginatedData.map((item) => (
-                  <motion.a
-                    key={item.id}
-                    href={item.url && !item.url.startsWith('http') ? `https://${item.url}` : item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => trackClick(item)}
-                    onAuxClick={(e) => {
-                      // Middle-click ("open in new tab") fires auxclick, not click
-                      if (e.button === 1) trackClick(item);
-                    }}
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.98 }}
-                    transition={{ duration: 0.3 }}
-                    className="group relative bg-white border border-border/50 p-4 md:p-5 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-accent/5 cursor-pointer"
-                  >
-                    {/* Left Content */}
-                    <div className="flex flex-row items-start md:items-center gap-4 flex-1">
-                      <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-muted text-secondary font-bold text-sm md:text-base flex-shrink-0">
-                        {item.rank}
-                      </div>
+                {paginatedData.map((item, idx) => {
+                  const productHref =
+                    item.url && !item.url.startsWith("http") ? `https://${item.url}` : item.url;
+                  const podium = item.rank === 1 ? "gold" : item.rank === 2 ? "silver" : item.rank === 3 ? "bronze" : null;
 
-                      <div className="relative flex-shrink-0 w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl border border-border/50 shadow-sm overflow-hidden bg-muted flex items-center justify-center">
+                  const rowTone = podium === "gold"
+                    ? "my-2 rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-200/70 via-amber-50/50 to-white shadow-[0_8px_28px_-10px_rgba(217,119,6,0.45)] px-2.5 md:px-3"
+                    : podium === "silver"
+                      ? "my-2 rounded-xl border-2 border-slate-400 bg-gradient-to-r from-slate-200/80 via-slate-50/50 to-white shadow-[0_8px_28px_-10px_rgba(71,85,105,0.35)] px-2.5 md:px-3"
+                      : podium === "bronze"
+                        ? "my-2 rounded-xl border-2 border-orange-500/80 bg-gradient-to-r from-orange-300/50 via-orange-50/40 to-white shadow-[0_8px_28px_-10px_rgba(194,65,12,0.35)] px-2.5 md:px-3"
+                        : "border-b border-border/50 hover:bg-white/40";
+
+                  const medalTone = podium === "gold"
+                    ? "bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 ring-2 ring-amber-300/80 shadow-md shadow-amber-500/30"
+                    : podium === "silver"
+                      ? "bg-gradient-to-br from-slate-100 to-slate-400 text-slate-800 ring-2 ring-slate-300 shadow-md shadow-slate-400/25"
+                      : podium === "bronze"
+                        ? "bg-gradient-to-br from-orange-300 to-amber-700 text-orange-950 ring-2 ring-orange-400/70 shadow-md shadow-orange-500/20"
+                        : "text-secondary";
+
+                  const placeLabel = podium === "gold" ? "1st" : podium === "silver" ? "2nd" : podium === "bronze" ? "3rd" : null;
+                  const placeChip = podium === "gold"
+                    ? "bg-amber-400/25 text-amber-900 border-amber-400/50"
+                    : podium === "silver"
+                      ? "bg-slate-300/40 text-slate-700 border-slate-400/50"
+                      : "bg-orange-300/30 text-orange-900 border-orange-400/50";
+
+                  const logoRing = podium === "gold"
+                    ? "ring-2 ring-amber-400"
+                    : podium === "silver"
+                      ? "ring-2 ring-slate-400"
+                      : podium === "bronze"
+                        ? "ring-2 ring-orange-500/80"
+                        : "";
+
+                  const showActivityAfter =
+                    currentPage === 1 &&
+                    latestActivity.length > 0 &&
+                    (item.rank === 3 ||
+                      (idx === paginatedData.length - 1 &&
+                        item.rank <= 3 &&
+                        !paginatedData.some((p) => p.rank === 3)));
+
+                  return (
+                    <Fragment key={item.id}>
+                    <motion.a
+                      href={productHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackClick(item)}
+                      onAuxClick={(e) => {
+                        if (e.button === 1) trackClick(item);
+                      }}
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={`group flex items-center gap-3 md:gap-4 py-3.5 transition-colors -mx-1 px-1 ${rowTone} ${podium ? "py-4" : ""}`}
+                    >
+                      {podium ? (
+                        <span className={`flex items-center justify-center w-8 h-8 rounded-full text-[13px] font-bold tabular-nums shrink-0 ${medalTone}`}>
+                          {item.rank}
+                        </span>
+                      ) : (
+                        <span className="w-7 shrink-0 text-[13px] font-semibold tabular-nums text-secondary">
+                          #{item.rank}
+                        </span>
+                      )}
+
+                      <div className={`relative shrink-0 rounded-xl overflow-hidden bg-muted ${logoRing} ${podium ? "w-14 h-14" : "w-12 h-12 border border-border/40"}`}>
                         {item.url ? (
-                          <img 
+                          <img
                             src={getLogoUrl(item.url)}
-                            alt={`${item.name} logo`}
+                            alt=""
                             className="absolute inset-0 w-full h-full object-cover bg-white"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/globe.svg';
-                              (e.target as HTMLImageElement).onerror = null; // Prevent infinite loop
+                              (e.target as HTMLImageElement).src = "/globe.svg";
+                              (e.target as HTMLImageElement).onerror = null;
                             }}
                           />
                         ) : (
-                          <img src="/globe.svg" alt="Default logo" className="w-6 h-6 md:w-8 md:h-8 opacity-50" />
+                          <img src="/globe.svg" alt="" className="w-5 h-5 m-auto mt-3.5 opacity-40" />
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-1 ml-1">
-                        <h3 className="text-lg font-bold tracking-tight text-foreground group-hover:text-accent transition-colors">
-                          {item.name}
-                        </h3>
-                        <p className="text-secondary text-xs font-medium max-w-[400px]">
-                          {item.description}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1 text-[10px] md:text-xs font-semibold text-secondary/80">
-                          <span className="px-2.5 py-1 bg-accent/10 text-accent-dark rounded-full">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2 min-w-0">
+                          <h3 className={`font-semibold tracking-tight text-foreground truncate group-hover:text-accent transition-colors ${
+                            podium ? "text-[15px] md:text-[17px]" : "text-[14px] md:text-[15px]"
+                          }`}>
+                            {item.name}
+                          </h3>
+                          {placeLabel && (
+                            <span className={`hidden sm:inline shrink-0 px-1.5 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wide ${placeChip}`}>
+                              {placeLabel}
+                            </span>
+                          )}
+                          <span className="hidden md:inline text-[11px] text-secondary/70 shrink-0">
                             {item.category}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <div className="w-1.5 h-1.5 rounded-full bg-border"></div>
-                            {item.clicks.toLocaleString()} clicks
-                          </span>
+                        </div>
+                        <p className={`text-secondary truncate max-w-[520px] ${podium ? "text-[13px]" : "text-[12px]"}`}>
+                          {item.description}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-secondary/80">
+                          <span>{(item.clicks || 0).toLocaleString()} clicks</span>
+                          {item.created_at && (
+                            <>
+                              <span className="text-border">·</span>
+                              <span>{getTimeAgo(item.last_hopped_at || item.created_at)}</span>
+                            </>
+                          )}
                         </div>
                       </div>
-                    </div>
 
-                    {/* Right Content */}
-                    <div className="flex flex-col items-start md:items-end gap-2.5 pt-3 md:pt-0 border-t md:border-none border-border/50 w-full md:w-auto">
-                      <div className="text-xl md:text-2xl font-bold text-foreground">
-                        ${item.price.toLocaleString()}
-                      </div>
-
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault(); // Prevent navigating to the product URL
-
-                          // Dispatch custom event to prefill the Hero form
-                          window.dispatchEvent(new CustomEvent('prefill-hop', {
-                            detail: { url: item.url, price: 2 } // Start with base bid
-                          }));
-
-                          const hopSection = document.getElementById('submit') || document.querySelector('form');
-                          if (hopSection) {
-                            hopSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          } else {
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }
-                        }}
-                        className="w-full md:w-auto group/btn relative overflow-hidden bg-foreground text-background px-5 py-2 rounded-full flex items-center justify-center gap-2 font-semibold text-xs md:text-sm hover:bg-accent hover:text-foreground transition-all duration-300 shadow-md"
-                      >
-                        <span className="block group-hover/btn:hidden">Hop up</span>
-                        <span className="hidden group-hover/btn:block">
-                          Hop up
+                      <div className="shrink-0 flex flex-col items-end gap-1">
+                        <span className={`font-semibold tabular-nums ${
+                          podium ? "text-[17px] md:text-[18px]" : "text-[15px] md:text-base"
+                        } ${
+                          podium === "gold" ? "text-amber-800" : podium === "silver" ? "text-slate-700" : podium === "bronze" ? "text-orange-900" : ""
+                        }`}>
+                          ${item.price.toLocaleString()}
                         </span>
-                        <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
-                      </button>
-                    </div>
-                  </motion.a>
-                ))}
+                        <button
+                          onClick={(e) => hopThis(item, e)}
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-secondary hover:text-accent transition-colors"
+                        >
+                          hop
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </motion.a>
+                    {showActivityAfter && (
+                      <div className="my-3 py-2.5 -mx-1 px-1 bg-gradient-to-r from-accent/20 via-accent/8 to-transparent">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-accent-dark/80 mb-1.5">
+                          Latest activity
+                        </p>
+                        <div className="grid grid-cols-3 gap-2 md:gap-4">
+                          {latestActivity.map((activity) => {
+                            const href =
+                              activity.url && !activity.url.startsWith("http")
+                                ? `https://${activity.url}`
+                                : activity.url;
+                            return (
+                              <a
+                                key={activity.id}
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => trackClick(activity)}
+                                onAuxClick={(e) => {
+                                  if (e.button === 1) trackClick(activity);
+                                }}
+                                className="group/act min-w-0 flex items-center gap-1.5"
+                              >
+                                <div className="relative shrink-0 w-6 h-6 rounded overflow-hidden bg-muted">
+                                  {activity.url ? (
+                                    <img
+                                      src={getLogoUrl(activity.url)}
+                                      alt=""
+                                      className="absolute inset-0 w-full h-full object-cover bg-white"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = "/globe.svg";
+                                        (e.target as HTMLImageElement).onerror = null;
+                                      }}
+                                    />
+                                  ) : (
+                                    <img src="/globe.svg" alt="" className="w-3 h-3 m-auto mt-1.5 opacity-40" />
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[12px] md:text-[13px] font-semibold tracking-tight text-foreground truncate group-hover/act:text-accent transition-colors">
+                                    {activity.name}
+                                  </p>
+                                  <p className="text-[11px] text-secondary truncate">
+                                    at #{activity.rank} · ${activity.price.toLocaleString()} · {getTimeAgo(activity.last_hopped_at || activity.created_at)}
+                                  </p>
+                                </div>
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    </Fragment>
+                  );
+                })}
               </AnimatePresence>
 
               {filteredData.length === 0 && (
-                <div className="py-20 text-center flex flex-col items-center justify-center bg-white/50 border border-dashed border-border/50 rounded-3xl text-secondary">
-                  <p className="text-base font-semibold mb-1">No products found</p>
-                  <p className="text-sm">The leaderboard is empty. Be the first!</p>
+                <div className="py-16 text-center text-secondary">
+                  <p className="text-sm font-medium text-foreground mb-1">No products found</p>
+                  <p className="text-[13px]">The board is empty. Be the first to hop up.</p>
                 </div>
               )}
 
-              {/* Pagination Controls */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6">
+                <div className="flex items-center justify-center gap-1.5 mt-8">
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 bg-white border border-border/50 rounded-full text-sm font-semibold text-secondary hover:text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 text-[13px] font-medium text-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Previous
                   </button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }).map((_, i) => {
-                      const page = i + 1;
-                      // Simple pagination dots logic if many pages, but for now just show all if small
-                      // Or just show current / total
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${currentPage === page
-                              ? "bg-foreground text-background"
-                              : "bg-transparent text-secondary hover:bg-muted"
-                            }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {Array.from({ length: totalPages }).map((_, i) => {
+                    const page = i + 1;
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors ${
+                          currentPage === page
+                            ? "bg-foreground text-background"
+                            : "text-secondary hover:text-foreground"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-white border border-border/50 rounded-full text-sm font-semibold text-secondary hover:text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 text-[13px] font-medium text-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Next
                   </button>

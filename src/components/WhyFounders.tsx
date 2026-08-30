@@ -12,12 +12,12 @@ export default function WhyFounders() {
       try {
         const [{ data: analyticsData }, { data: productsData }] = await Promise.all([
           supabase.from("analytics").select("total_visits").limit(1).single(),
-          supabase.from("products").select("clicks")
+          supabase.from("products").select("clicks"),
         ]);
 
         const pageVisits = analyticsData?.total_visits || 0;
         const productClicks = productsData?.reduce((acc, p) => acc + p.clicks, 0) || 0;
-        
+
         setTotalClicks(pageVisits + productClicks);
       } catch (err) {
         console.error("Failed to fetch exact clicks", err);
@@ -27,66 +27,53 @@ export default function WhyFounders() {
   }, []);
 
   return (
-    <section className="w-full bg-background py-32 px-6 md:px-12 flex flex-col items-center">
+    <section className="w-full px-4 md:px-8 py-16 md:py-20 flex flex-col items-center">
       <div className="max-w-[1000px] w-full flex flex-col items-center text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
+        <motion.h2
+          initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5 }}
+          className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-3"
         >
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-foreground mb-4">
-            Why would<br />
-            anyone do this?
-          </h2>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-10 relative"
-        >
-          <div className="absolute -inset-10 bg-accent/10 blur-3xl rounded-full -z-10" />
-          <span className="text-6xl md:text-7xl lg:text-9xl font-bold text-accent leading-none block drop-shadow-sm">
-            Attention.
-          </span>
-        </motion.div>
+          Why would anyone do this?
+        </motion.h2>
 
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-lg md:text-xl text-secondary max-w-[700px] font-medium leading-relaxed mb-20 text-balance"
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5, delay: 0.05 }}
+          className="text-4xl md:text-5xl font-semibold tracking-tight text-accent mb-4"
         >
-          Because attention is expensive. <br className="hidden md:block" />
-          A few dollars can put your product in front of founders, builders, creators, and curious people who would never have discovered it otherwise.
+          Attention.
         </motion.p>
 
-        <div className="flex flex-col md:flex-row justify-center gap-10 md:gap-20 w-full relative bg-white border border-border/50 rounded-3xl p-10 shadow-sm">
-          {[
-            { value: totalClicks !== null ? totalClicks.toLocaleString() : "...", label: "Clicks generated" },
-            { value: "165+", label: "New signups" },
-            { value: "35+", label: "Demo calls" },
-          ].map((metric, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6, delay: 0.5 + idx * 0.1 }}
-              className="flex flex-col items-center flex-1"
-            >
-              <div className="text-4xl md:text-5xl font-bold text-foreground mb-2">
-                {metric.value}
-              </div>
-              <div className="text-sm font-medium text-secondary">
-                {metric.label}
-              </div>
-            </motion.div>
-          ))}
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-base md:text-lg text-secondary max-w-[480px] leading-relaxed mb-8"
+        >
+          A few dollars puts your product in front of people who would never have found you otherwise.
+        </motion.p>
+
+        <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2 text-base text-secondary">
+          <span>
+            <span className="font-semibold text-foreground tabular-nums text-lg">
+              {totalClicks !== null ? totalClicks.toLocaleString() : "—"}
+            </span>{" "}
+            clicks
+          </span>
+          <span className="text-border hidden sm:inline">·</span>
+          <span>
+            <span className="font-semibold text-foreground tabular-nums text-lg">165+</span> signups
+          </span>
+          <span className="text-border hidden sm:inline">·</span>
+          <span>
+            <span className="font-semibold text-foreground tabular-nums text-lg">35+</span> demo calls
+          </span>
         </div>
       </div>
     </section>

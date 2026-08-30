@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ArrowRight, Trophy, Sparkles, Info } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -28,16 +28,16 @@ export default function Navbar() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className={`w-full max-w-6xl pointer-events-auto rounded-full flex items-center justify-between px-5 md:px-6 py-3.5 transition-all duration-300 ${
-          scrolled 
-            ? "bg-white/80 backdrop-blur-xl border border-white/50 shadow-lg shadow-black/[0.03]" 
-            : "bg-white/50 backdrop-blur-md border border-white/40 shadow-sm"
+        className={`w-full max-w-[1000px] pointer-events-auto rounded-full flex items-center justify-between px-4 md:px-5 py-2.5 transition-all duration-300 ${
+          scrolled
+            ? "bg-white/80 backdrop-blur-xl border border-white/50 shadow-sm"
+            : "bg-white/50 backdrop-blur-md border border-white/40"
         }`}
       >
         {/* Logo */}
         <div className="flex-1">
-          <Link href="/" className="text-xl md:text-2xl font-bold tracking-tight z-50 flex items-center gap-2 group">
-            <img src="/hoplogo.png" alt="HopUp Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-sm group-hover:scale-105 transition-transform" />
+          <Link href="/" className="text-lg md:text-xl font-semibold tracking-tight z-50 flex items-center gap-2 group">
+            <img src="/hoplogo.png" alt="HopUp Logo" className="w-8 h-8 md:w-9 md:h-9 object-contain group-hover:scale-105 transition-transform" />
             <div className="flex items-baseline">
               <span className="text-foreground">HopUp.</span>
               <span className="text-accent">lol</span>
@@ -47,7 +47,7 @@ export default function Navbar() {
 
         {/* Desktop Nav - Middle */}
         <div className="hidden md:flex flex-1 justify-center">
-          <div className="flex items-center gap-1 bg-muted/40 p-1.5 rounded-full border border-border/50">
+          <div className="flex items-center gap-5">
             <Link
               href="/#leaderboard"
               onClick={(e) => {
@@ -56,20 +56,18 @@ export default function Navbar() {
                   document.getElementById('leaderboard')?.scrollIntoView({ behavior: 'smooth' });
                 }
               }}
-              className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold text-secondary hover:text-foreground hover:bg-white hover:shadow-sm transition-all duration-300"
+              className="text-sm font-medium text-secondary hover:text-foreground transition-colors"
             >
-              <Trophy className="w-4 h-4 text-amber-500" />
               Leaderboard
             </Link>
             <Link
               href="/about"
-              className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
-                pathname === "/about" 
-                  ? "text-foreground bg-white shadow-sm" 
-                  : "text-secondary hover:text-foreground hover:bg-white hover:shadow-sm"
+              className={`text-sm font-medium transition-colors ${
+                pathname === "/about"
+                  ? "text-foreground"
+                  : "text-secondary hover:text-foreground"
               }`}
             >
-              <Info className="w-4 h-4 text-blue-500" />
               About
             </Link>
           </div>
@@ -85,14 +83,10 @@ export default function Navbar() {
                 router.push("/");
               }
             }}
-            className="group relative inline-flex items-center gap-2 bg-foreground text-background px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-accent/20"
+            className="group inline-flex items-center gap-1.5 bg-foreground text-background px-5 py-2 rounded-full text-sm font-semibold hover:bg-accent hover:text-foreground transition-colors"
           >
-            <span className="relative z-10 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-accent" />
               Hop your product
-              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-            </span>
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-accent/0 via-accent/20 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
           </button>
         </div>
 
@@ -113,11 +107,11 @@ export default function Navbar() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="absolute top-[110%] left-0 right-0 bg-white/95 backdrop-blur-xl border border-white/50 rounded-3xl p-6 shadow-2xl flex flex-col items-center gap-6 md:hidden mx-0"
+              className="absolute top-[110%] left-0 right-0 bg-white/95 backdrop-blur-xl border border-white/50 rounded-2xl p-5 shadow-lg flex flex-col items-center gap-4 md:hidden mx-0"
             >
               <Link
                 href="/#leaderboard"
-                className="flex items-center gap-2 text-xl font-semibold hover:text-accent transition-colors"
+                className="text-sm font-medium text-secondary hover:text-foreground transition-colors"
                 onClick={(e) => {
                   if (pathname === "/") {
                     e.preventDefault();
@@ -128,18 +122,16 @@ export default function Navbar() {
                   }
                 }}
               >
-                <Trophy className="w-5 h-5 text-amber-500" />
                 Leaderboard
               </Link>
               
               <Link
                 href="/about"
-                className={`flex items-center gap-2 text-xl font-semibold transition-colors ${
-                  pathname === "/about" ? "text-accent" : "hover:text-accent"
+                className={`text-sm font-medium transition-colors ${
+                  pathname === "/about" ? "text-foreground" : "text-secondary hover:text-foreground"
                 }`}
                 onClick={() => setIsOpen(false)}
               >
-                <Info className="w-5 h-5 text-blue-500" />
                 About
               </Link>
               
@@ -152,11 +144,10 @@ export default function Navbar() {
                     router.push("/");
                   }
                 }}
-                className="w-full group relative inline-flex items-center justify-center gap-2 bg-foreground text-background px-6 py-3.5 rounded-full text-base font-semibold transition-all duration-300 shadow-lg"
+                className="inline-flex items-center justify-center gap-1.5 bg-foreground text-background px-5 py-2 rounded-full text-sm font-semibold"
               >
-                <Sparkles className="w-5 h-5 text-accent" />
                 Hop your product
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </motion.div>
           )}

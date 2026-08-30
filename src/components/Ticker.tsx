@@ -95,7 +95,7 @@ export default function Ticker() {
     <motion.div 
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="inline-flex items-center gap-2 text-[10px] md:text-xs font-semibold text-secondary bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-border/50 shadow-sm overflow-hidden h-8"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-secondary overflow-hidden"
     >
       <Activity className="w-3.5 h-3.5 text-accent flex-shrink-0" />
       <AnimatePresence mode="wait">

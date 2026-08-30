@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 import { motion } from "framer-motion";
@@ -90,7 +90,7 @@ export default function LiveStats() {
       initial={{ opacity: 0, y: -20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.6, type: "spring", bounce: 0.4 }}
-      className="inline-flex items-center gap-2 md:gap-4 text-[10px] md:text-xs font-semibold text-secondary bg-white/60 backdrop-blur-sm px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-border/50 shadow-sm whitespace-nowrap h-8"
+      className="inline-flex items-center gap-2 text-sm font-medium text-secondary whitespace-nowrap"
     >
       <div className="flex items-center gap-1.5">
         <div className="relative flex items-center justify-center w-2 h-2">
