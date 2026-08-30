@@ -142,15 +142,25 @@ export default function Hero() {
     }
   };
 
+  const champId = useMemo(() => {
+    if (leaderboardData.length < 2) return null;
+    return leaderboardData.reduce((top, p) => (p.price > top.price ? p : top)).id;
+  }, [leaderboardData]);
+
+  const activeBoard = useMemo(
+    () => (champId ? leaderboardData.filter((p) => p.id !== champId) : leaderboardData),
+    [leaderboardData, champId]
+  );
+
   const expectedRank = useMemo(() => {
-    if (leaderboardData.length === 0) return 1;
+    if (activeBoard.length === 0) return 1;
 
     let totalBid = bidAmount;
     let existingProductId = null;
 
     if (url.trim()) {
       const { finalUrl } = getFormattedUrlInfo(url);
-      const existingProduct = leaderboardData.find(
+      const existingProduct = activeBoard.find(
         (p) => p.url?.replace(/\/$/, "").toLowerCase() === finalUrl.toLowerCase()
       );
       if (existingProduct) {
@@ -159,23 +169,23 @@ export default function Hero() {
       }
     }
 
-    const countHigherOrEqual = leaderboardData.filter((p) => {
+    const countHigherOrEqual = activeBoard.filter((p) => {
       if (existingProductId && p.id === existingProductId) return false;
       return p.price >= totalBid;
     }).length;
 
     return countHigherOrEqual + 1;
-  }, [bidAmount, leaderboardData, url]);
+  }, [bidAmount, activeBoard, url]);
 
   const rankForTwo = useMemo(() => {
-    if (leaderboardData.length === 0) return 1;
+    if (activeBoard.length === 0) return 1;
 
     let totalBid = 2;
     let existingProductId = null;
 
     if (url.trim()) {
       const { finalUrl } = getFormattedUrlInfo(url);
-      const existingProduct = leaderboardData.find(
+      const existingProduct = activeBoard.find(
         (p) => p.url?.replace(/\/$/, "").toLowerCase() === finalUrl.toLowerCase()
       );
       if (existingProduct) {
@@ -184,28 +194,28 @@ export default function Hero() {
       }
     }
 
-    const countHigherOrEqual = leaderboardData.filter((p) => {
+    const countHigherOrEqual = activeBoard.filter((p) => {
       if (existingProductId && p.id === existingProductId) return false;
       return p.price >= totalBid;
     }).length;
 
     return countHigherOrEqual + 1;
-  }, [leaderboardData, url]);
+  }, [activeBoard, url]);
 
   const amountForRank1 = useMemo(() => {
-    if (leaderboardData.length === 0) return 2;
+    if (activeBoard.length === 0) return 2;
 
-    const topPrice = Math.max(...leaderboardData.map((p) => p.price));
+    const topPrice = Math.max(...activeBoard.map((p) => p.price));
 
     let currentPrice = 0;
     if (url.trim()) {
       const { finalUrl } = getFormattedUrlInfo(url);
-      const existingProduct = leaderboardData.find(
+      const existingProduct = activeBoard.find(
         (p) => p.url?.replace(/\/$/, "").toLowerCase() === finalUrl.toLowerCase()
       );
       if (existingProduct) {
         currentPrice = existingProduct.price;
-        const othersTop = leaderboardData.filter((p) => p.id !== existingProduct.id && p.price >= topPrice);
+        const othersTop = activeBoard.filter((p) => p.id !== existingProduct.id && p.price >= topPrice);
         if (othersTop.length === 0 && currentPrice === topPrice) {
           return 2;
         }
@@ -216,7 +226,7 @@ export default function Hero() {
     const requiredAdditionalBid = requiredTotal - currentPrice;
 
     return Math.max(2, requiredAdditionalBid);
-  }, [leaderboardData, url]);
+  }, [activeBoard, url]);
 
   return (
     <section className="relative w-full px-4 md:px-8 pt-24 md:pt-28 pb-4 md:pb-6">
