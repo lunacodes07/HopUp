@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { fetchMetadata } from '@/lib/metadata';
 import { Webhook } from 'standardwebhooks'; // Real verification
+import { applySponsoredPayment } from '@/lib/apply-sponsored-payment';
 
 export async function POST(request: Request) {
   try {
@@ -22,6 +23,11 @@ export async function POST(request: Request) {
     // We listen for payment.succeeded
     if (event.type === 'payment.succeeded') {
       const paymentData = event.data;
+
+      if (paymentData.metadata?.hopup_kind === 'sponsored') {
+        await applySponsoredPayment(paymentData);
+        return NextResponse.json({ received: true });
+      }
       
       // Extract the metadata we passed during checkout creation
       const url = paymentData.metadata?.hopup_url;
