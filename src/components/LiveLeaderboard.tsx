@@ -108,14 +108,14 @@ export default function LiveLeaderboard() {
   }, [searchQuery, activeCategory]);
 
   const latestActivity = useMemo(() => {
-    return [...leaderboardData]
+    return [...activeBoard]
       .sort((a, b) => {
         const aTime = new Date(a.last_hopped_at || a.created_at || 0).getTime();
         const bTime = new Date(b.last_hopped_at || b.created_at || 0).getTime();
         return bTime - aTime;
       })
       .slice(0, 3);
-  }, [leaderboardData]);
+  }, [activeBoard]);
 
   const totalMoney = useMemo(
     () => leaderboardData.reduce((sum, item) => sum + item.price, 0),
