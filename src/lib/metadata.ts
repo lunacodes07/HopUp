@@ -1,10 +1,13 @@
-import * as cheerio from 'cheerio';
+import * as cheerio from "cheerio";
+import { getLogoUrl } from "@/lib/logo";
 
 export async function fetchMetadata(targetUrl: string) {
   let formattedUrl = targetUrl;
-  if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-    formattedUrl = 'https://' + formattedUrl;
+  if (!formattedUrl.startsWith("http://") && !formattedUrl.startsWith("https://")) {
+    formattedUrl = "https://" + formattedUrl;
   }
+
+  const fallbackLogo = getLogoUrl(formattedUrl);
 
   try {
     const controller = new AbortController();
@@ -13,28 +16,34 @@ export async function fetchMetadata(targetUrl: string) {
     const response = await fetch(formattedUrl, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; HopUpBot/1.0)',
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml",
       },
+      redirect: "follow",
     });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      return { title: '', description: '' };
+      return { title: "", description: "", logo: fallbackLogo };
     }
 
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    let title = $('title').text().trim() || $('meta[property="og:title"]').attr('content') || '';
-    let description = 
-      $('meta[name="description"]').attr('content') ||
-      $('meta[property="og:description"]').attr('content') ||
-      '';
+    const title =
+      $('meta[property="og:title"]').attr("content")?.trim()
+      || $("title").text().trim()
+      || "";
+    const description =
+      $('meta[property="og:description"]').attr("content")
+      || $('meta[name="description"]').attr("content")
+      || "";
 
-    return { title, description };
+    return { title, description, logo: fallbackLogo };
   } catch (error) {
-    console.error('Error fetching metadata for', formattedUrl, error);
-    return { title: '', description: '' };
+    console.error("Error fetching metadata for", formattedUrl, error);
+    return { title: "", description: "", logo: fallbackLogo };
   }
 }

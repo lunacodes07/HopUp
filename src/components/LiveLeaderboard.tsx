@@ -5,25 +5,10 @@ import { motion, AnimatePresence, useSpring, useTransform } from "framer-motion"
 import { Search, ArrowRight, Crown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
+import { getLogoUrl, handleLogoError } from "@/lib/logo";
+import SponsoredSlots from "./SponsoredSlots";
 
 const CATEGORIES = ["All", "AI / Builders", "AI Agents", "DevTools", "Marketing", "SEO", "Design", "Other"];
-
-const getLogoUrl = (url: string) => {
-  if (!url) return "/globe.svg";
-  try {
-    const parsedUrl = new URL(url.startsWith("http") ? url : `https://${url}`);
-    const domain = parsedUrl.hostname.toLowerCase();
-    if (domain === "x.com" || domain === "twitter.com") {
-      const username = parsedUrl.pathname.split("/")[1];
-      if (username) {
-        return `https://unavatar.io/x/${username}`;
-      }
-    }
-  } catch {
-    // Ignore invalid URLs
-  }
-  return `https://icon.horse/icon/${url.replace(/^https?:\/\//, "").split("/")[0]}`;
-};
 
 const getTimeAgo = (dateString?: string) => {
   if (!dateString) return "";
@@ -215,10 +200,7 @@ export default function LiveLeaderboard() {
                       src={getLogoUrl(champion.url)}
                       alt=""
                       className="absolute inset-0 w-full h-full object-cover bg-white"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/globe.svg";
-                        (e.target as HTMLImageElement).onerror = null;
-                      }}
+                      onError={(e) => handleLogoError(e.currentTarget, champion.url)}
                     />
                   ) : (
                     <img src="/globe.svg" alt="" className="w-6 h-6 m-auto mt-4 opacity-40" />
@@ -259,6 +241,8 @@ export default function LiveLeaderboard() {
             </a>
           </div>
         )}
+
+        <SponsoredSlots />
 
         <div className="flex items-end justify-between gap-3 mb-3 sm:mb-5">
           <div className="min-w-0">
@@ -410,10 +394,7 @@ export default function LiveLeaderboard() {
                             src={getLogoUrl(item.url)}
                             alt=""
                             className="absolute inset-0 w-full h-full object-cover bg-white"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/globe.svg";
-                              (e.target as HTMLImageElement).onerror = null;
-                            }}
+                            onError={(e) => handleLogoError(e.currentTarget, item.url)}
                           />
                         ) : (
                           <img src="/globe.svg" alt="" className="w-5 h-5 m-auto mt-3.5 opacity-40" />
@@ -496,10 +477,7 @@ export default function LiveLeaderboard() {
                                       src={getLogoUrl(activity.url)}
                                       alt=""
                                       className="absolute inset-0 w-full h-full object-cover bg-white"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).src = "/globe.svg";
-                                        (e.target as HTMLImageElement).onerror = null;
-                                      }}
+                                      onError={(e) => handleLogoError(e.currentTarget, activity.url)}
                                     />
                                   ) : (
                                     <img src="/globe.svg" alt="" className="w-3 h-3 m-auto mt-1.5 opacity-40" />
