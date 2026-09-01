@@ -229,9 +229,9 @@ export default function Hero() {
   }, [activeBoard, url]);
 
   return (
-    <section className="relative w-full px-4 md:px-8 pt-24 md:pt-28 pb-4 md:pb-6">
+    <section className="relative w-full px-4 md:px-8 pt-20 md:pt-24 pb-3 md:pb-4">
       <div className="w-full max-w-[1000px] mx-auto flex flex-col items-center">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 mb-5 text-center">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 mb-4 text-center">
           <LiveStats />
           <span className="hidden sm:inline text-border">·</span>
           <div className="hidden sm:block">
@@ -239,7 +239,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="w-full flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 lg:gap-10 mb-7">
+        <div className="w-full flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 lg:gap-8 mb-5">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
