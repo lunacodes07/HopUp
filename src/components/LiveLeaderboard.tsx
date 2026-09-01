@@ -10,6 +10,18 @@ import SponsoredSlots from "./SponsoredSlots";
 
 const CATEGORIES = ["All", "AI / Builders", "AI Agents", "DevTools", "Marketing", "SEO", "Design", "Other"];
 
+const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
+
+type BoardMode = "recent" | "alltime";
+
+const BOARD_MODES: { id: BoardMode; label: string; shortLabel?: string }[] = [
+  { id: "alltime", label: "All time" },
+  { id: "recent", label: "Last 48 hrs", shortLabel: "48 hrs" },
+];
+
+const hoppedAt = (item: Product) =>
+  new Date(item.last_hopped_at || item.created_at || 0).getTime();
+
 const getTimeAgo = (dateString?: string) => {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -30,11 +42,24 @@ const getTimeAgo = (dateString?: string) => {
 export default function LiveLeaderboard() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [boardMode, setBoardMode] = useState<BoardMode>("alltime");
+  const [now, setNow] = useState(() => Date.now());
   const [leaderboardData, setLeaderboardData] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
   const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    const tick = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(tick);
+  }, []);
+
+  useEffect(() => {
+    const showRecent = () => setBoardMode("recent");
+    window.addEventListener("show-recent-board", showRecent);
+    return () => window.removeEventListener("show-recent-board", showRecent);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,7 +112,16 @@ export default function LiveLeaderboard() {
       .map((item, idx) => ({ ...item, rank: idx + 1 }));
   }, [leaderboardData, champion]);
 
-  const filteredData = activeBoard.filter((item) => {
+  const recentBoard = useMemo(() => {
+    const cutoff = now - FORTY_EIGHT_HOURS_MS;
+    return activeBoard
+      .filter((item) => hoppedAt(item) >= cutoff)
+      .map((item, idx) => ({ ...item, rank: idx + 1 }));
+  }, [activeBoard, now]);
+
+  const sourceBoard = boardMode === "recent" ? recentBoard : activeBoard;
+
+  const filteredData = sourceBoard.filter((item) => {
     const matchesCategory =
       activeCategory === "All" || (item.category || "").toLowerCase().includes(activeCategory.toLowerCase());
     const query = searchQuery.toLowerCase();
@@ -105,17 +139,13 @@ export default function LiveLeaderboard() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, activeCategory]);
+  }, [searchQuery, activeCategory, boardMode]);
 
   const latestActivity = useMemo(() => {
-    return [...activeBoard]
-      .sort((a, b) => {
-        const aTime = new Date(a.last_hopped_at || a.created_at || 0).getTime();
-        const bTime = new Date(b.last_hopped_at || b.created_at || 0).getTime();
-        return bTime - aTime;
-      })
+    return [...sourceBoard]
+      .sort((a, b) => hoppedAt(b) - hoppedAt(a))
       .slice(0, 3);
-  }, [activeBoard]);
+  }, [sourceBoard]);
 
   const totalMoney = useMemo(
     () => leaderboardData.reduce((sum, item) => sum + item.price, 0),
@@ -165,16 +195,16 @@ export default function LiveLeaderboard() {
   };
 
   return (
-    <section id="leaderboard" className="w-full px-4 md:px-8 pt-4 pb-20 flex flex-col items-center">
+    <section id="leaderboard" className="w-full px-4 md:px-8 pt-2 pb-20 flex flex-col items-center">
       <div className="w-full max-w-[1000px]">
         {champion && (
-          <div className="relative mb-7">
+          <div className="relative mb-5">
             <div className="absolute -inset-3 md:-inset-4 rounded-3xl bg-gradient-to-r from-amber-300/40 via-yellow-200/25 to-transparent blur-2xl animate-hof-glow pointer-events-none" />
             <div className="absolute -top-1 left-[12%] w-1.5 h-1.5 rounded-full bg-amber-200 shadow-[0_0_10px_3px_rgba(251,191,36,0.7)] animate-hof-sparkle pointer-events-none" />
             <div className="absolute top-2 right-[22%] w-1 h-1 rounded-full bg-yellow-100 shadow-[0_0_8px_2px_rgba(253,224,71,0.8)] animate-hof-sparkle pointer-events-none [animation-delay:0.7s]" />
             <div className="absolute bottom-3 left-[38%] w-1 h-1 rounded-full bg-amber-100 shadow-[0_0_8px_2px_rgba(251,191,36,0.75)] animate-hof-sparkle pointer-events-none [animation-delay:1.3s]" />
 
-            <p className="relative flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-800 mb-2">
+            <p className="relative flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-800 mb-1.5">
               <Crown className="w-3.5 h-3.5 fill-amber-400 text-amber-600" />
               Hall of Fame
             </p>
@@ -187,14 +217,14 @@ export default function LiveLeaderboard() {
               onAuxClick={(e) => {
                 if (e.button === 1) trackClick(champion);
               }}
-              className="group relative overflow-hidden flex items-center gap-3 md:gap-4 py-4 px-3 md:px-4 rounded-2xl border border-amber-400/80 bg-gradient-to-r from-amber-200/80 via-yellow-50/70 to-white shadow-[0_0_0_1px_rgba(251,191,36,0.35),0_12px_40px_-12px_rgba(217,119,6,0.55)]"
+              className="group relative overflow-hidden flex items-center gap-2.5 md:gap-3.5 py-3.5 px-3 md:px-3.5 rounded-2xl border border-amber-400/80 bg-gradient-to-r from-amber-200/80 via-yellow-50/70 to-white shadow-[0_0_0_1px_rgba(251,191,36,0.35),0_12px_40px_-12px_rgba(217,119,6,0.55)]"
             >
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-amber-200/20 animate-hof-sheen" />
               <div className="pointer-events-none absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/70 to-transparent animate-hof-shimmer" />
 
               <div className="relative shrink-0">
                 <div className="absolute -inset-1.5 rounded-2xl bg-amber-300/50 blur-md animate-hof-glow" />
-                <div className="relative w-14 h-14 rounded-2xl overflow-hidden bg-white ring-2 ring-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.55)]">
+                <div className="relative w-[50px] h-[50px] rounded-2xl overflow-hidden bg-white ring-2 ring-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.55)]">
                   {champion.url ? (
                     <img
                       src={getLogoUrl(champion.url)}
@@ -203,7 +233,7 @@ export default function LiveLeaderboard() {
                       onError={(e) => handleLogoError(e.currentTarget, champion.url)}
                     />
                   ) : (
-                    <img src="/globe.svg" alt="" className="w-6 h-6 m-auto mt-4 opacity-40" />
+                    <img src="/globe.svg" alt="" className="w-5 h-5 m-auto mt-3.5 opacity-40" />
                   )}
                 </div>
                 <Crown className="absolute -top-2 -right-1.5 w-4 h-4 fill-amber-400 text-amber-700 drop-shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
@@ -244,16 +274,74 @@ export default function LiveLeaderboard() {
 
         <SponsoredSlots />
 
-        <div className="flex items-end justify-between gap-3 mb-3 sm:mb-5">
+        <div className="relative mb-3 sm:mb-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
           <div className="min-w-0">
-            <h2 className="text-lg sm:text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
+            <h2 className="text-[15px] sm:text-xl md:text-2xl font-semibold tracking-tight text-foreground leading-none">
               Who&apos;s up
             </h2>
-            <p className="hidden sm:block text-base text-secondary mt-1">
-              The internet&apos;s most unnecessary competition.
+            <p className="hidden sm:block mt-1 text-[10px] md:text-[11px] leading-tight text-secondary/80">
+              {boardMode === "recent"
+                ? "Separate ranks for anyone who hopped in the last 48 hours."
+                : "The internet's most unnecessary competition."}
             </p>
           </div>
-          <p className="shrink-0 text-[12px] sm:text-sm text-secondary text-right pb-0.5">
+
+          <div
+            role="tablist"
+            aria-label="Leaderboard period"
+            className="relative inline-flex items-center rounded-full border border-white/70 bg-white/30 p-[3px] backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_8px_28px_-18px_rgba(45,41,38,0.45)]"
+          >
+            <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
+              <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-glass-sheen" />
+            </span>
+            {BOARD_MODES.map((mode) => {
+              const selected = boardMode === mode.id;
+              return (
+                <button
+                  key={mode.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => setBoardMode(mode.id)}
+                  className={`relative z-10 rounded-full px-2.5 sm:px-3.5 py-1.5 text-[11px] sm:text-[12px] font-semibold tracking-tight transition-colors ${
+                    selected ? "text-foreground" : "text-secondary/80 hover:text-foreground"
+                  }`}
+                >
+                  {selected && (
+                    <motion.span
+                      layoutId="board-mode-pill"
+                      className="absolute -inset-px overflow-hidden rounded-full shadow-[0_0_10px_rgba(212,175,55,0.55),0_0_22px_rgba(245,215,110,0.4)]"
+                      transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                    >
+                      <span
+                        className="absolute left-1/2 top-1/2 h-[230%] w-[230%] -translate-x-1/2 -translate-y-1/2 animate-toggle-spin"
+                        style={{
+                          background:
+                            "conic-gradient(from 0deg, transparent 0deg 190deg, #8A6A1A 240deg, #D4AF37 290deg, #F5D76E 325deg, #FFF4C2 348deg, transparent 360deg)",
+                        }}
+                      />
+                      <span className="absolute inset-[1.5px] overflow-hidden rounded-full bg-[linear-gradient(180deg,#FFF8E4_0%,#FFFBF2_55%,#F7E7B8_100%)] backdrop-blur-md">
+                        <span className="absolute inset-y-0 -left-1/2 w-2/3 bg-gradient-to-r from-transparent via-white to-transparent animate-glass-sheen" />
+                        <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,244,194,0.9),transparent_55%)]" />
+                      </span>
+                    </motion.span>
+                  )}
+                  <span className="relative">
+                    {mode.shortLabel ? (
+                      <>
+                        <span className="sm:hidden">{mode.shortLabel}</span>
+                        <span className="hidden sm:inline">{mode.label}</span>
+                      </>
+                    ) : (
+                      mode.label
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="min-w-0 text-[11px] sm:text-sm text-secondary text-right">
             made{" "}
             <motion.span className="font-semibold text-accent-dark font-mono tabular-nums">
               {displayMoney}
@@ -504,8 +592,16 @@ export default function LiveLeaderboard() {
 
               {filteredData.length === 0 && (
                 <div className="py-16 text-center text-secondary">
-                  <p className="text-sm font-medium text-foreground mb-1">No products found</p>
-                  <p className="text-[13px]">The board is empty. Be the first to hop up.</p>
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    {boardMode === "recent" && !searchQuery && activeCategory === "All"
+                      ? "No hops in the last 48 hours"
+                      : "No products found"}
+                  </p>
+                  <p className="text-[13px]">
+                    {boardMode === "recent" && !searchQuery && activeCategory === "All"
+                      ? "Hop now and you can take #1 on this board."
+                      : "The board is empty. Be the first to hop up."}
+                  </p>
                 </div>
               )}
 

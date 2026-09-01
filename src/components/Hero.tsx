@@ -8,6 +8,14 @@ import type { Product } from "@/types";
 import LiveStats from "./LiveStats";
 import Ticker from "./Ticker";
 
+const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
+
+const hoppedAt = (item: Product) =>
+  new Date(item.last_hopped_at || item.created_at || 0).getTime();
+
+const matchesUrl = (productUrl: string | undefined, finalUrl: string) =>
+  productUrl?.replace(/\/$/, "").toLowerCase() === finalUrl.toLowerCase();
+
 const CATEGORIES = [
   { value: "DevTools", label: "Developer Tools" },
   { value: "AI / Builders", label: "AI / Builders" },
@@ -48,7 +56,7 @@ export default function Hero() {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("id, url, price")
+        .select("id, url, price, last_hopped_at, created_at")
         .order("price", { ascending: false })
         .order("created_at", { ascending: true });
 
@@ -152,55 +160,49 @@ export default function Hero() {
     [leaderboardData, champId]
   );
 
-  const expectedRank = useMemo(() => {
-    if (activeBoard.length === 0) return 1;
+  const recentBoard = useMemo(() => {
+    const cutoff = Date.now() - FORTY_EIGHT_HOURS_MS;
+    return activeBoard.filter((p) => hoppedAt(p) >= cutoff);
+  }, [activeBoard]);
 
-    let totalBid = bidAmount;
-    let existingProductId = null;
+  const rankOnBoard = useCallback(
+    (board: Product[], bid: number) => {
+      let totalBid = bid;
+      let existingProductId: string | null = null;
 
-    if (url.trim()) {
-      const { finalUrl } = getFormattedUrlInfo(url);
-      const existingProduct = activeBoard.find(
-        (p) => p.url?.replace(/\/$/, "").toLowerCase() === finalUrl.toLowerCase()
-      );
-      if (existingProduct) {
-        totalBid = existingProduct.price + bidAmount;
-        existingProductId = existingProduct.id;
+      if (url.trim()) {
+        const { finalUrl } = getFormattedUrlInfo(url);
+        const existingProduct = activeBoard.find((p) => matchesUrl(p.url, finalUrl));
+        if (existingProduct) {
+          totalBid = existingProduct.price + bid;
+          existingProductId = existingProduct.id;
+        }
       }
-    }
 
-    const countHigherOrEqual = activeBoard.filter((p) => {
-      if (existingProductId && p.id === existingProductId) return false;
-      return p.price >= totalBid;
-    }).length;
-
-    return countHigherOrEqual + 1;
-  }, [bidAmount, activeBoard, url]);
-
-  const rankForTwo = useMemo(() => {
-    if (activeBoard.length === 0) return 1;
-
-    let totalBid = 2;
-    let existingProductId = null;
-
-    if (url.trim()) {
-      const { finalUrl } = getFormattedUrlInfo(url);
-      const existingProduct = activeBoard.find(
-        (p) => p.url?.replace(/\/$/, "").toLowerCase() === finalUrl.toLowerCase()
+      return (
+        board.filter((p) => {
+          if (existingProductId && p.id === existingProductId) return false;
+          return p.price >= totalBid;
+        }).length + 1
       );
-      if (existingProduct) {
-        totalBid = existingProduct.price + 2;
-        existingProductId = existingProduct.id;
-      }
-    }
+    },
+    [activeBoard, url]
+  );
 
-    const countHigherOrEqual = activeBoard.filter((p) => {
-      if (existingProductId && p.id === existingProductId) return false;
-      return p.price >= totalBid;
-    }).length;
+  const expectedRank = useMemo(
+    () => rankOnBoard(activeBoard, bidAmount),
+    [rankOnBoard, activeBoard, bidAmount]
+  );
 
-    return countHigherOrEqual + 1;
-  }, [activeBoard, url]);
+  const expectedRecentRank = useMemo(
+    () => rankOnBoard(recentBoard, bidAmount),
+    [rankOnBoard, recentBoard, bidAmount]
+  );
+
+  const rankForTwoRecent = useMemo(
+    () => rankOnBoard(recentBoard, 2),
+    [rankOnBoard, recentBoard]
+  );
 
   const amountForRank1 = useMemo(() => {
     if (activeBoard.length === 0) return 2;
@@ -210,9 +212,7 @@ export default function Hero() {
     let currentPrice = 0;
     if (url.trim()) {
       const { finalUrl } = getFormattedUrlInfo(url);
-      const existingProduct = activeBoard.find(
-        (p) => p.url?.replace(/\/$/, "").toLowerCase() === finalUrl.toLowerCase()
-      );
+      const existingProduct = activeBoard.find((p) => matchesUrl(p.url, finalUrl));
       if (existingProduct) {
         currentPrice = existingProduct.price;
         const othersTop = activeBoard.filter((p) => p.id !== existingProduct.id && p.price >= topPrice);
@@ -228,10 +228,36 @@ export default function Hero() {
     return Math.max(2, requiredAdditionalBid);
   }, [activeBoard, url]);
 
+  const amountForRecentRank1 = useMemo(() => {
+    if (recentBoard.length === 0) return 2;
+
+    const topPrice = Math.max(...recentBoard.map((p) => p.price));
+
+    let currentPrice = 0;
+    if (url.trim()) {
+      const { finalUrl } = getFormattedUrlInfo(url);
+      const existingProduct = activeBoard.find((p) => matchesUrl(p.url, finalUrl));
+      if (existingProduct) {
+        currentPrice = existingProduct.price;
+        const othersTop = recentBoard.filter((p) => p.id !== existingProduct.id && p.price >= topPrice);
+        if (othersTop.length === 0 && currentPrice === topPrice) {
+          return 2;
+        }
+      }
+    }
+
+    return Math.max(2, topPrice + 1 - currentPrice);
+  }, [recentBoard, activeBoard, url]);
+
+  const showRecentBoard = () => {
+    window.dispatchEvent(new CustomEvent("show-recent-board"));
+    document.getElementById("leaderboard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
-    <section className="relative w-full px-4 md:px-8 pt-24 md:pt-28 pb-4 md:pb-6">
+    <section className="relative w-full px-4 md:px-8 pt-20 md:pt-24 pb-3 md:pb-4">
       <div className="w-full max-w-[1000px] mx-auto flex flex-col items-center">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 mb-5 text-center">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 mb-4 text-center">
           <LiveStats />
           <span className="hidden sm:inline text-border">·</span>
           <div className="hidden sm:block">
@@ -239,7 +265,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="w-full flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 lg:gap-10 mb-7">
+        <div className="w-full flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 lg:gap-8 mb-5">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -272,9 +298,51 @@ export default function Hero() {
               <span className="text-accent tabular-nums">${amountForRank1}</span>
             </button>
             <p className="text-sm md:text-base text-secondary mt-1.5">
-              Or list anything for <span className="font-semibold text-foreground">$2</span>
-              {" "}— expected rank{" "}
-              <span className="font-semibold text-foreground tabular-nums">#{rankForTwo}</span>
+              {rankForTwoRecent === 1 ? (
+                <>
+                  Or take{" "}
+                  <button
+                    type="button"
+                    onClick={showRecentBoard}
+                    className="font-semibold text-foreground hover:text-accent transition-colors"
+                  >
+                    Last 48 hrs #1
+                  </button>{" "}
+                  for{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBidAmount(2);
+                      urlInputRef.current?.focus();
+                    }}
+                    className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
+                  >
+                    $2
+                  </button>
+                </>
+              ) : (
+                <>
+                  Or hop for{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBidAmount(2);
+                      urlInputRef.current?.focus();
+                    }}
+                    className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
+                  >
+                    $2
+                  </button>
+                  {" — "}
+                  <button
+                    type="button"
+                    onClick={showRecentBoard}
+                    className="font-semibold text-foreground hover:text-accent transition-colors tabular-nums"
+                  >
+                    #{rankForTwoRecent} on Last 48 hrs
+                  </button>
+                </>
+              )}
             </p>
           </motion.div>
         </div>
@@ -365,20 +433,28 @@ export default function Hero() {
           </div>
 
           <p className="mt-3 text-sm text-secondary text-center md:text-left">
-            Expected rank{" "}
-            <span className="font-semibold text-foreground tabular-nums">#{expectedRank}</span>
-            {expectedRank > 1 && (
+            <button
+              type="button"
+              onClick={showRecentBoard}
+              className="font-semibold text-foreground hover:text-accent transition-colors tabular-nums"
+            >
+              #{expectedRecentRank} on Last 48 hrs
+            </button>
+            <span className="text-secondary/70">
+              {" · "}all time #{expectedRank}
+            </span>
+            {expectedRecentRank > 1 && amountForRecentRank1 < amountForRank1 && (
               <>
                 {" · "}
                 <button
                   type="button"
                   onClick={() => {
-                    setBidAmount(amountForRank1);
+                    setBidAmount(amountForRecentRank1);
                     urlInputRef.current?.focus();
                   }}
                   className="text-accent hover:underline underline-offset-2"
                 >
-                  claim #1 for ${amountForRank1}
+                  take 48hr #1 for ${amountForRecentRank1}
                 </button>
               </>
             )}

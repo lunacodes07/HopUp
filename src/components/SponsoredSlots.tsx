@@ -408,7 +408,7 @@ export default function SponsoredSlots() {
   };
 
   return (
-    <div className="mb-8">
+    <div className="mb-5">
       <div className="mb-2.5 flex items-end justify-between gap-3">
         <div>
           <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-dark/85">

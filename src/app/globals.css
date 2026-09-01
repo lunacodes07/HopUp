@@ -18,6 +18,8 @@
   --animate-hof-glow: hof-glow 2.8s ease-in-out infinite;
   --animate-hof-sparkle: hof-sparkle 2.2s ease-in-out infinite;
   --animate-hof-sheen: hof-sheen 5s ease-in-out infinite;
+  --animate-glass-sheen: glass-sheen 3.4s ease-in-out infinite;
+  --animate-toggle-spin: toggle-spin 1.35s linear infinite;
 
   @keyframes marquee {
     from { transform: translateX(0); }
@@ -49,6 +51,17 @@
   @keyframes hof-sheen {
     0%, 100% { opacity: 0.4; }
     50% { opacity: 0.85; }
+  }
+
+  @keyframes glass-sheen {
+    0% { transform: translateX(-140%) skewX(-18deg); opacity: 0; }
+    18% { opacity: 0.7; }
+    42% { opacity: 0.15; }
+    100% { transform: translateX(240%) skewX(-18deg); opacity: 0; }
+  }
+
+  @keyframes toggle-spin {
+    to { transform: rotate(360deg); }
   }
 }
 
