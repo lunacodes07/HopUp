@@ -56,6 +56,12 @@ export default function LiveLeaderboard() {
   }, []);
 
   useEffect(() => {
+    const showRecent = () => setBoardMode("recent");
+    window.addEventListener("show-recent-board", showRecent);
+    return () => window.removeEventListener("show-recent-board", showRecent);
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const { data, error } = await supabase
