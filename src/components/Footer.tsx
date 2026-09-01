@@ -31,6 +31,21 @@ export default function Footer() {
 
         <span className="text-xs text-secondary/60">© 2026</span>
       </div>
+
+      <a
+        href="https://www.producthunt.com/products/hopup?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-hopup"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-6 opacity-90 transition-opacity hover:opacity-100"
+      >
+        <img
+          alt="HopUp - Your Product Deserves a Better Spot | Product Hunt"
+          width={180}
+          height={39}
+          className="h-[39px] w-[180px]"
+          src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1238456&theme=light&t=1788265340921"
+        />
+      </a>
     </footer>
   );
 }
