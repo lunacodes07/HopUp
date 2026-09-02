@@ -1,10 +1,10 @@
 import type { Product } from "@/types";
 import { idPrefixFromSlug, productSlug } from "@/lib/product-path";
-import { supabaseServer } from "@/lib/supabase-server";
+import { supabase } from "@/lib/supabase";
 
 export async function getRankedProducts(): Promise<Product[]> {
   try {
-    const { data, error } = await supabaseServer
+    const { data, error } = await supabase
       .from("products")
       .select("id, name, description, category, clicks, price, url, created_at, last_hopped_at")
       .order("price", { ascending: false })
