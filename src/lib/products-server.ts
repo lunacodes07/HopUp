@@ -3,18 +3,26 @@ import { idPrefixFromSlug, productSlug } from "@/lib/product-path";
 import { supabaseServer } from "@/lib/supabase-server";
 
 export async function getRankedProducts(): Promise<Product[]> {
-  const { data, error } = await supabaseServer
-    .from("products")
-    .select("id, name, description, category, clicks, price, url, created_at, last_hopped_at")
-    .order("price", { ascending: false })
-    .order("created_at", { ascending: true });
+  try {
+    const { data, error } = await supabaseServer
+      .from("products")
+      .select("id, name, description, category, clicks, price, url, created_at, last_hopped_at")
+      .order("price", { ascending: false })
+      .order("created_at", { ascending: true });
 
-  if (error) throw error;
+    if (error) {
+      console.error("Failed to load products:", error);
+      return [];
+    }
 
-  return (data || []).map((item, idx) => ({
-    ...(item as Product),
-    rank: idx + 1,
-  }));
+    return (data || []).map((item, idx) => ({
+      ...(item as Product),
+      rank: idx + 1,
+    }));
+  } catch (err) {
+    console.error("Failed to load products:", err);
+    return [];
+  }
 }
 
 export function withBoardRanks(products: Product[]): Product[] {
