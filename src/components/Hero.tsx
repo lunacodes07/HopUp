@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Minus, Plus, Loader2, ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
+import { hallOfFameClaimPrice } from "@/lib/hof";
 import LiveStats from "./LiveStats";
 import Ticker from "./Ticker";
 
@@ -48,9 +49,16 @@ export default function Hero() {
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState("DevTools");
   const [bidAmount, setBidAmount] = useState(2);
+  const [minBid, setMinBid] = useState(2);
   const [leaderboardData, setLeaderboardData] = useState<Product[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const urlInputRef = useRef<HTMLInputElement>(null);
+
+  const applyBid = (amount: number, floor = 2) => {
+    const nextFloor = Math.max(2, floor);
+    setMinBid(nextFloor);
+    setBidAmount(Math.max(nextFloor, amount));
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -88,13 +96,26 @@ export default function Hero() {
 
   useEffect(() => {
     const handlePrefill = (e: CustomEvent) => {
-      if (e.detail) {
-        setUrl(e.detail.url || "");
-        setBidAmount(e.detail.price || 2);
+      if (!e.detail) return;
+      if (typeof e.detail.url === "string") setUrl(e.detail.url);
+      if (typeof e.detail.price === "number") {
+        const next = Math.max(2, e.detail.price);
+        applyBid(next, e.detail.lockMin ? next : 2);
       }
     };
 
     window.addEventListener("prefill-hop", handlePrefill as EventListener);
+
+    const hopFromQuery = new URLSearchParams(window.location.search).get("hop");
+    if (hopFromQuery) {
+      setUrl(hopFromQuery);
+      applyBid(2);
+      window.setTimeout(() => {
+        urlInputRef.current?.focus();
+        document.getElementById("submit")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 80);
+    }
+
     return () => window.removeEventListener("prefill-hop", handlePrefill as EventListener);
   }, []);
 
@@ -140,20 +161,22 @@ export default function Hero() {
   };
 
   const adjustBid = (amount: number) => {
-    setBidAmount((prev) => Math.max(2, prev + amount));
+    setBidAmount((prev) => Math.max(minBid, prev + amount));
   };
 
   const handleBidInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value, 10);
     if (!isNaN(val)) {
-      setBidAmount(Math.max(2, val));
+      setBidAmount(Math.max(minBid, val));
     }
   };
 
-  const champId = useMemo(() => {
+  const champion = useMemo(() => {
     if (leaderboardData.length < 2) return null;
-    return leaderboardData.reduce((top, p) => (p.price > top.price ? p : top)).id;
+    return leaderboardData.reduce((top, p) => (p.price > top.price ? p : top));
   }, [leaderboardData]);
+
+  const champId = champion?.id ?? null;
 
   const activeBoard = useMemo(
     () => (champId ? leaderboardData.filter((p) => p.id !== champId) : leaderboardData),
@@ -172,7 +195,7 @@ export default function Hero() {
 
       if (url.trim()) {
         const { finalUrl } = getFormattedUrlInfo(url);
-        const existingProduct = activeBoard.find((p) => matchesUrl(p.url, finalUrl));
+        const existingProduct = leaderboardData.find((p) => matchesUrl(p.url, finalUrl));
         if (existingProduct) {
           totalBid = existingProduct.price + bid;
           existingProductId = existingProduct.id;
@@ -186,7 +209,7 @@ export default function Hero() {
         }).length + 1
       );
     },
-    [activeBoard, url]
+    [leaderboardData, url]
   );
 
   const expectedRank = useMemo(
@@ -249,6 +272,15 @@ export default function Hero() {
     return Math.max(2, topPrice + 1 - currentPrice);
   }, [recentBoard, activeBoard, url]);
 
+  const projectedTotal = useMemo(() => {
+    if (!url.trim()) return bidAmount;
+    const { finalUrl } = getFormattedUrlInfo(url);
+    const existing = leaderboardData.find((p) => matchesUrl(p.url, finalUrl));
+    return existing ? existing.price + bidAmount : bidAmount;
+  }, [bidAmount, url, leaderboardData]);
+
+  const wouldTakeHof = Boolean(champion && projectedTotal > champion.price);
+
   const showRecentBoard = () => {
     window.dispatchEvent(new CustomEvent("show-recent-board"));
     document.getElementById("leaderboard")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -289,7 +321,7 @@ export default function Hero() {
             <button
               type="button"
               onClick={() => {
-                setBidAmount(amountForRank1);
+                applyBid(amountForRank1);
                 urlInputRef.current?.focus();
               }}
               className="text-[26px] md:text-[32px] font-semibold tracking-tight text-foreground leading-snug hover:opacity-80 transition-opacity"
@@ -312,7 +344,7 @@ export default function Hero() {
                   <button
                     type="button"
                     onClick={() => {
-                      setBidAmount(2);
+                      applyBid(2);
                       urlInputRef.current?.focus();
                     }}
                     className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
@@ -326,7 +358,7 @@ export default function Hero() {
                   <button
                     type="button"
                     onClick={() => {
-                      setBidAmount(2);
+                      applyBid(2);
                       urlInputRef.current?.focus();
                     }}
                     className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
@@ -394,7 +426,7 @@ export default function Hero() {
               <button
                 type="button"
                 onClick={() => adjustBid(-1)}
-                disabled={bidAmount <= 2}
+                disabled={bidAmount <= minBid}
                 aria-label="Decrease bid"
                 className="w-9 h-9 flex items-center justify-center text-secondary hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
@@ -404,7 +436,7 @@ export default function Hero() {
                 <span className="text-secondary text-base select-none">$</span>
                 <input
                   type="number"
-                  min="2"
+                  min={minBid}
                   step="1"
                   value={bidAmount}
                   onChange={handleBidInputChange}
@@ -433,25 +465,36 @@ export default function Hero() {
           </div>
 
           <p className="mt-3 text-sm text-secondary text-center md:text-left">
-            <button
-              type="button"
-              onClick={showRecentBoard}
-              className="font-semibold text-foreground hover:text-accent transition-colors tabular-nums"
-            >
-              #{expectedRecentRank} on Last 48 hrs
-            </button>
-            <span className="text-secondary/70">
-              {" · "}all time #{expectedRank}
-            </span>
-            {expectedRecentRank > 1 && amountForRecentRank1 < amountForRank1 && (
+            {wouldTakeHof ? (
+              <>
+                <span className="font-semibold text-foreground">
+                  Takes <span className="text-accent">Hall of Fame</span>
+                </span>
+
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={showRecentBoard}
+                  className="font-semibold text-foreground hover:text-accent transition-colors tabular-nums"
+                >
+                  #{expectedRecentRank} on Last 48 hrs
+                </button>
+                <span className="text-secondary/70">
+                  {" · "}all time #{expectedRank}
+                </span>
+              </>
+            )}
+            {!wouldTakeHof && expectedRecentRank > 1 && amountForRecentRank1 < amountForRank1 && (
               <>
                 {" · "}
                 <button
                   type="button"
-                  onClick={() => {
-                    setBidAmount(amountForRecentRank1);
-                    urlInputRef.current?.focus();
-                  }}
+                    onClick={() => {
+                      applyBid(amountForRecentRank1);
+                      urlInputRef.current?.focus();
+                    }}
                   className="text-accent hover:underline underline-offset-2"
                 >
                   take 48hr #1 for ${amountForRecentRank1}
