@@ -61,6 +61,16 @@ export default function Navbar() {
               Leaderboard
             </Link>
             <Link
+              href="/p"
+              className={`text-sm font-medium transition-colors ${
+                pathname.startsWith("/p")
+                  ? "text-foreground"
+                  : "text-secondary hover:text-foreground"
+              }`}
+            >
+              Listings
+            </Link>
+            <Link
               href="/about"
               className={`text-sm font-medium transition-colors ${
                 pathname === "/about"
@@ -123,6 +133,15 @@ export default function Navbar() {
                 }}
               >
                 Leaderboard
+              </Link>
+              <Link
+                href="/p"
+                className={`text-sm font-medium transition-colors ${
+                  pathname.startsWith("/p") ? "text-foreground" : "text-secondary hover:text-foreground"
+                }`}
+                onClick={() => setIsOpen(false)}
+              >
+                Listings
               </Link>
               
               <Link

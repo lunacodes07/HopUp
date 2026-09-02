@@ -6,6 +6,9 @@ import { Search, ArrowRight, Crown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 import { getLogoUrl, handleLogoError } from "@/lib/logo";
+import { hallOfFameClaimPrice } from "@/lib/hof";
+import { productPath } from "@/lib/product-path";
+import { trackProductClick } from "@/lib/track-click";
 import SponsoredSlots from "./SponsoredSlots";
 
 const CATEGORIES = ["All", "AI / Builders", "AI Agents", "DevTools", "Marketing", "SEO", "Design", "Other"];
@@ -171,11 +174,9 @@ export default function LiveLeaderboard() {
 
   const trackClick = (item: Product) => {
     setLeaderboardData((prev) =>
-      prev.map((p) => (p.id === item.id ? { ...p, clicks: p.clicks + 1 } : p))
+      prev.map((p) => (p.id === item.id ? { ...p, clicks: (p.clicks || 0) + 1 } : p))
     );
-    supabase.rpc("increment_clicks", { p_product_id: item.id }).then(({ error }) => {
-      if (error) console.error("Failed to track click:", error.message);
-    });
+    trackProductClick(item.id);
   };
 
   const hopThis = (item: Product, e: React.MouseEvent) => {
@@ -184,6 +185,23 @@ export default function LiveLeaderboard() {
     window.dispatchEvent(
       new CustomEvent("prefill-hop", {
         detail: { url: item.url, price: 2 },
+      })
+    );
+    const hopSection = document.getElementById("submit");
+    if (hopSection) {
+      hopSection.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const claimHof = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!champion) return;
+    window.dispatchEvent(
+      new CustomEvent("prefill-hop", {
+        detail: { price: hallOfFameClaimPrice(champion.price), lockMin: true },
       })
     );
     const hopSection = document.getElementById("submit");
@@ -204,15 +222,25 @@ export default function LiveLeaderboard() {
             <div className="absolute top-2 right-[22%] w-1 h-1 rounded-full bg-yellow-100 shadow-[0_0_8px_2px_rgba(253,224,71,0.8)] animate-hof-sparkle pointer-events-none [animation-delay:0.7s]" />
             <div className="absolute bottom-3 left-[38%] w-1 h-1 rounded-full bg-amber-100 shadow-[0_0_8px_2px_rgba(251,191,36,0.75)] animate-hof-sparkle pointer-events-none [animation-delay:1.3s]" />
 
-            <p className="relative flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-800 mb-1.5">
-              <Crown className="w-3.5 h-3.5 fill-amber-400 text-amber-600" />
-              Hall of Fame
-            </p>
+            <div className="relative flex items-center justify-between gap-3 mb-1.5">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-800">
+                <Crown className="w-3.5 h-3.5 fill-amber-400 text-amber-600" />
+                Hall of Fame
+              </p>
+              <button
+                type="button"
+                onClick={claimHof}
+                className="text-[10px] md:text-[11px] font-medium text-amber-900/75 hover:text-amber-950 transition-colors"
+              >
+                claim this for{" "}
+                <span className="font-semibold tabular-nums">
+                  ${hallOfFameClaimPrice(champion.price).toLocaleString()}
+                </span>
+              </button>
+            </div>
 
             <a
-              href={champion.url && !champion.url.startsWith("http") ? `https://${champion.url}` : champion.url}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={productPath(champion)}
               onClick={() => trackClick(champion)}
               onAuxClick={(e) => {
                 if (e.button === 1) trackClick(champion);
@@ -406,8 +434,7 @@ export default function LiveLeaderboard() {
             <>
               <AnimatePresence mode="popLayout">
                 {paginatedData.map((item, idx) => {
-                  const productHref =
-                    item.url && !item.url.startsWith("http") ? `https://${item.url}` : item.url;
+                  const productHref = productPath(item);
                   const podium = item.rank === 1 ? "gold" : item.rank === 2 ? "silver" : item.rank === 3 ? "bronze" : null;
 
                   const rowTone = podium === "gold"
@@ -453,8 +480,6 @@ export default function LiveLeaderboard() {
                     <Fragment key={item.id}>
                     <motion.a
                       href={productHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       onClick={() => trackClick(item)}
                       onAuxClick={(e) => {
                         if (e.button === 1) trackClick(item);
@@ -543,16 +568,10 @@ export default function LiveLeaderboard() {
                         </p>
                         <div className="grid grid-cols-3 gap-2 md:gap-4">
                           {latestActivity.map((activity) => {
-                            const href =
-                              activity.url && !activity.url.startsWith("http")
-                                ? `https://${activity.url}`
-                                : activity.url;
                             return (
                               <a
                                 key={activity.id}
-                                href={href}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                href={productPath(activity)}
                                 onClick={() => trackClick(activity)}
                                 onAuxClick={(e) => {
                                   if (e.button === 1) trackClick(activity);

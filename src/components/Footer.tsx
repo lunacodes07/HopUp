@@ -12,6 +12,9 @@ export default function Footer() {
           <Link href="/#leaderboard" className="hover:text-foreground transition-colors">
             Leaderboard
           </Link>
+          <Link href="/p" className="hover:text-foreground transition-colors">
+            Listings
+          </Link>
           <Link href="/#pricing" className="hover:text-foreground transition-colors">
             Pricing
           </Link>
