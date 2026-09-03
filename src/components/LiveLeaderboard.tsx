@@ -1,21 +1,23 @@
 "use client";
 
 import { useEffect, useState, useMemo, Fragment } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useSpring, useTransform } from "framer-motion";
 import { Search, ArrowRight, Crown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 import { getLogoUrl, handleLogoError } from "@/lib/logo";
 import { hallOfFameClaimPrice } from "@/lib/hof";
+import { LISTINGS_PER_PAGE, type BoardMode, boardCanonicalPath, boardPath } from "@/lib/pagination";
 import { productPath } from "@/lib/product-path";
 import { trackProductClick } from "@/lib/track-click";
+import Pagination from "./Pagination";
 import SponsoredSlots from "./SponsoredSlots";
 
 const CATEGORIES = ["All", "AI / Builders", "AI Agents", "DevTools", "Marketing", "SEO", "Design", "Other"];
 
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
-
-type BoardMode = "recent" | "alltime";
 
 const BOARD_MODES: { id: BoardMode; label: string; shortLabel?: string }[] = [
   { id: "alltime", label: "All time" },
@@ -42,26 +44,28 @@ const getTimeAgo = (dateString?: string) => {
   return `${diffInDays}d ago`;
 };
 
-export default function LiveLeaderboard() {
+export default function LiveLeaderboard({
+  page = 1,
+  boardMode = "alltime",
+  initialProducts = [],
+}: {
+  page?: number;
+  boardMode?: BoardMode;
+  initialProducts?: Product[];
+}) {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [boardMode, setBoardMode] = useState<BoardMode>("alltime");
   const [now, setNow] = useState(() => Date.now());
-  const [leaderboardData, setLeaderboardData] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [leaderboardData, setLeaderboardData] = useState<Product[]>(initialProducts);
+  const [isLoading, setIsLoading] = useState(initialProducts.length === 0);
 
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = LISTINGS_PER_PAGE;
+  const currentPage = page;
 
   useEffect(() => {
     const tick = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(tick);
-  }, []);
-
-  useEffect(() => {
-    const showRecent = () => setBoardMode("recent");
-    window.addEventListener("show-recent-board", showRecent);
-    return () => window.removeEventListener("show-recent-board", showRecent);
   }, []);
 
   useEffect(() => {
@@ -141,8 +145,15 @@ export default function LiveLeaderboard() {
   );
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, activeCategory, boardMode]);
+    if ((searchQuery || activeCategory !== "All") && page > 1) {
+      router.replace(`${boardCanonicalPath(boardMode, 1)}#leaderboard`);
+    }
+  }, [searchQuery, activeCategory, boardMode, page, router]);
+
+  useEffect(() => {
+    if (page <= 1) return;
+    document.getElementById("leaderboard")?.scrollIntoView({ block: "start" });
+  }, [page]);
 
   const latestActivity = useMemo(() => {
     return [...sourceBoard]
@@ -325,12 +336,11 @@ export default function LiveLeaderboard() {
             {BOARD_MODES.map((mode) => {
               const selected = boardMode === mode.id;
               return (
-                <button
+                <Link
                   key={mode.id}
-                  type="button"
+                  href={boardPath(mode.id, 1)}
                   role="tab"
                   aria-selected={selected}
-                  onClick={() => setBoardMode(mode.id)}
                   className={`relative z-10 rounded-full px-2.5 sm:px-3.5 py-1.5 text-[11px] sm:text-[12px] font-semibold tracking-tight transition-colors ${
                     selected ? "text-foreground" : "text-secondary/80 hover:text-foreground"
                   }`}
@@ -364,7 +374,7 @@ export default function LiveLeaderboard() {
                       mode.label
                     )}
                   </span>
-                </button>
+                </Link>
               );
             })}
           </div>
@@ -624,40 +634,11 @@ export default function LiveLeaderboard() {
                 </div>
               )}
 
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-1.5 mt-8">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1.5 text-[13px] font-medium text-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Previous
-                  </button>
-                  {Array.from({ length: totalPages }).map((_, i) => {
-                    const page = i + 1;
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors ${
-                          currentPage === page
-                            ? "bg-foreground text-background"
-                            : "text-secondary hover:text-foreground"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1.5 text-[13px] font-medium text-secondary hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
+              <Pagination
+                current={currentPage}
+                total={totalPages}
+                hrefForPage={(nextPage) => boardPath(boardMode, nextPage)}
+              />
             </>
           )}
         </div>
