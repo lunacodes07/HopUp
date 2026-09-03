@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, Minus, Plus, Loader2, ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -46,6 +47,7 @@ const getFormattedUrlInfo = (rawUrl: string) => {
 };
 
 export default function Hero() {
+  const router = useRouter();
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState("DevTools");
   const [bidAmount, setBidAmount] = useState(2);
@@ -282,8 +284,7 @@ export default function Hero() {
   const wouldTakeHof = Boolean(champion && projectedTotal > champion.price);
 
   const showRecentBoard = () => {
-    window.dispatchEvent(new CustomEvent("show-recent-board"));
-    document.getElementById("leaderboard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    router.push("/last-48-hours#leaderboard");
   };
 
   return (

@@ -1,25 +1,9 @@
-import Navbar from "@/components/Navbar";
-import Hero from "@/components/Hero";
+import HomeView from "@/components/HomeView";
+import { getRankedProducts } from "@/lib/products-server";
 
-import LiveLeaderboard from "@/components/LiveLeaderboard";
-import WhyFounders from "@/components/WhyFounders";
+export const revalidate = 60;
 
-import Pricing from "@/components/Pricing";
-import Footer from "@/components/Footer";
-
-export default function Home() {
-  return (
-    <>
-      <Navbar />
-      <main className="flex flex-col flex-1 w-full relative">
-        <Hero />
-
-        <LiveLeaderboard />
-        <WhyFounders />
-        <Pricing />
-
-      </main>
-      <Footer />
-    </>
-  );
+export default async function Home() {
+  const products = await getRankedProducts();
+  return <HomeView page={1} products={products} />;
 }
