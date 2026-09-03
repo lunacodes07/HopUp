@@ -13,8 +13,6 @@ import type { Product } from "@/types";
 
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
 
-export const boardRevalidate = 60;
-
 function hoppedAt(item: Product) {
   return new Date(item.last_hopped_at || item.created_at || 0).getTime();
 }

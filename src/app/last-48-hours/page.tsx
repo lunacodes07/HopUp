@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import HomeView from "@/components/HomeView";
-import { boardMetadata, boardRevalidate, loadBoardProducts } from "@/lib/board-page";
+import { boardMetadata, loadBoardProducts } from "@/lib/board-page";
 
-export const revalidate = boardRevalidate;
+export const revalidate = 60;
 
 export const metadata: Metadata = boardMetadata("recent", 1);
 

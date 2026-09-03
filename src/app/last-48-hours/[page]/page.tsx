@@ -3,12 +3,11 @@ import HomeView from "@/components/HomeView";
 import {
   boardMetadata,
   boardPageParams,
-  boardRevalidate,
   loadBoardProducts,
   resolveBoardPage,
 } from "@/lib/board-page";
 
-export const revalidate = boardRevalidate;
+export const revalidate = 60;
 export const dynamicParams = true;
 
 type PageProps = {
