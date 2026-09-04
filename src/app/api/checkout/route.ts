@@ -3,6 +3,7 @@ import { dodo } from '@/lib/dodo';
 import { supabaseServer } from '@/lib/supabase-server';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
+import { minBidForUrl } from '@/lib/bid';
 import { getSponsorPlan, isValidSlotNumber } from '@/lib/sponsored';
 import { isSlotAvailable } from '@/lib/sponsored-server';
 
@@ -76,12 +77,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Missing url, bidAmount, or category' }, { status: 400 });
       }
 
-      // Server-side validation: Ensure the bid is valid for the product (if it exists)
-      // To prevent race conditions and hacking, we should ensure the user's bid isn't blindly accepted.
-      // However, in a "Pay What You Want" model or cumulative bid model, any bid > 0 is usually fine 
-      // to add to the existing total, but let's just make sure it's at least 1.
-      if (bidAmount < 1) {
-        return NextResponse.json({ error: 'Bid amount must be at least $1' }, { status: 400 });
+      const minBid = minBidForUrl(url);
+      const amount = Math.round(Number(bidAmount));
+      if (!Number.isFinite(amount) || amount < minBid) {
+        return NextResponse.json(
+          { error: `Bid amount must be at least $${minBid}` },
+          { status: 400 }
+        );
       }
 
       const { data: existingData } = await supabaseServer
@@ -92,10 +94,10 @@ export async function POST(request: Request) {
 
       const existingProduct = existingData && existingData.length > 0 ? existingData[0] : null;
 
-      amountInCents = bidAmount * 100;
+      amountInCents = amount * 100;
       metadata = {
         hopup_url: url,
-        hopup_bid_amount: bidAmount.toString(),
+        hopup_bid_amount: amount.toString(),
         hopup_category: category,
         hopup_name_fallback: nameFallback || url,
         hopup_product_id: existingProduct?.id || 'new',
