@@ -8,6 +8,7 @@ import { Search, ArrowRight, Crown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 import { getProxiedLogoUrl, handleLogoError } from "@/lib/logo";
+import { minBidForUrl } from "@/lib/bid";
 import { hallOfFameClaimPrice } from "@/lib/hof";
 import { LISTINGS_PER_PAGE, type BoardMode, boardCanonicalPath, boardPath } from "@/lib/pagination";
 import { productPath } from "@/lib/product-path";
@@ -195,7 +196,7 @@ export default function LiveLeaderboard({
     e.stopPropagation();
     window.dispatchEvent(
       new CustomEvent("prefill-hop", {
-        detail: { url: item.url, price: 2 },
+        detail: { url: item.url, price: minBidForUrl(item.url) },
       })
     );
     const hopSection = document.getElementById("submit");

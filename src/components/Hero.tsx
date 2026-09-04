@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Minus, Plus, Loader2, ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
+import { DEFAULT_MIN_BID, LOL_MIN_BID, minBidForUrl } from "@/lib/bid";
 import { hallOfFameClaimPrice } from "@/lib/hof";
 import { rememberPendingShare } from "@/lib/share";
 import LiveStats from "./LiveStats";
@@ -51,16 +52,20 @@ export default function Hero() {
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState("DevTools");
-  const [bidAmount, setBidAmount] = useState(2);
-  const [minBid, setMinBid] = useState(2);
+  const [bidAmount, setBidAmount] = useState(DEFAULT_MIN_BID);
+  const [lockedMin, setLockedMin] = useState(0);
   const [leaderboardData, setLeaderboardData] = useState<Product[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const urlInputRef = useRef<HTMLInputElement>(null);
 
-  const applyBid = (amount: number, floor = 2) => {
-    const nextFloor = Math.max(2, floor);
-    setMinBid(nextFloor);
-    setBidAmount(Math.max(nextFloor, amount));
+  const urlFloor = useMemo(() => minBidForUrl(url), [url]);
+  const minBid = Math.max(urlFloor, lockedMin);
+
+  const applyBid = (amount: number, options?: { lockMin?: number; rawUrl?: string }) => {
+    const floorFromUrl = minBidForUrl(options?.rawUrl ?? url);
+    const lock = options?.lockMin ?? 0;
+    setLockedMin(lock);
+    setBidAmount(Math.max(floorFromUrl, lock, amount));
   };
 
   const fetchData = useCallback(async () => {
@@ -100,10 +105,15 @@ export default function Hero() {
   useEffect(() => {
     const handlePrefill = (e: CustomEvent) => {
       if (!e.detail) return;
-      if (typeof e.detail.url === "string") setUrl(e.detail.url);
+      const nextUrl = typeof e.detail.url === "string" ? e.detail.url : undefined;
+      if (nextUrl) setUrl(nextUrl);
       if (typeof e.detail.price === "number") {
-        const next = Math.max(2, e.detail.price);
-        applyBid(next, e.detail.lockMin ? next : 2);
+        applyBid(e.detail.price, {
+          lockMin: e.detail.lockMin ? e.detail.price : 0,
+          rawUrl: nextUrl,
+        });
+      } else if (nextUrl) {
+        applyBid(minBidForUrl(nextUrl), { rawUrl: nextUrl });
       }
     };
 
@@ -112,7 +122,7 @@ export default function Hero() {
     const hopFromQuery = new URLSearchParams(window.location.search).get("hop");
     if (hopFromQuery) {
       setUrl(hopFromQuery);
-      applyBid(2);
+      applyBid(minBidForUrl(hopFromQuery), { rawUrl: hopFromQuery });
       window.setTimeout(() => {
         urlInputRef.current?.focus();
         document.getElementById("submit")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -121,6 +131,15 @@ export default function Hero() {
 
     return () => window.removeEventListener("prefill-hop", handlePrefill as EventListener);
   }, []);
+
+  useEffect(() => {
+    setBidAmount((prev) => {
+      if (lockedMin > 0) return Math.max(minBid, prev);
+      if (prev < minBid) return minBid;
+      if (prev === DEFAULT_MIN_BID && urlFloor === LOL_MIN_BID) return LOL_MIN_BID;
+      return prev;
+    });
+  }, [minBid, lockedMin, urlFloor]);
 
   const handleHop = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,12 +251,12 @@ export default function Hero() {
   );
 
   const rankForTwoRecent = useMemo(
-    () => rankOnBoard(recentBoard, 2),
-    [rankOnBoard, recentBoard]
+    () => rankOnBoard(recentBoard, urlFloor),
+    [rankOnBoard, recentBoard, urlFloor]
   );
 
   const amountForRank1 = useMemo(() => {
-    if (activeBoard.length === 0) return 2;
+    if (activeBoard.length === 0) return urlFloor;
 
     const topPrice = Math.max(...activeBoard.map((p) => p.price));
 
@@ -249,7 +268,7 @@ export default function Hero() {
         currentPrice = existingProduct.price;
         const othersTop = activeBoard.filter((p) => p.id !== existingProduct.id && p.price >= topPrice);
         if (othersTop.length === 0 && currentPrice === topPrice) {
-          return 2;
+          return urlFloor;
         }
       }
     }
@@ -257,11 +276,11 @@ export default function Hero() {
     const requiredTotal = topPrice + 1;
     const requiredAdditionalBid = requiredTotal - currentPrice;
 
-    return Math.max(2, requiredAdditionalBid);
-  }, [activeBoard, url]);
+    return Math.max(urlFloor, requiredAdditionalBid);
+  }, [activeBoard, url, urlFloor]);
 
   const amountForRecentRank1 = useMemo(() => {
-    if (recentBoard.length === 0) return 2;
+    if (recentBoard.length === 0) return urlFloor;
 
     const topPrice = Math.max(...recentBoard.map((p) => p.price));
 
@@ -273,13 +292,13 @@ export default function Hero() {
         currentPrice = existingProduct.price;
         const othersTop = recentBoard.filter((p) => p.id !== existingProduct.id && p.price >= topPrice);
         if (othersTop.length === 0 && currentPrice === topPrice) {
-          return 2;
+          return urlFloor;
         }
       }
     }
 
-    return Math.max(2, topPrice + 1 - currentPrice);
-  }, [recentBoard, activeBoard, url]);
+    return Math.max(urlFloor, topPrice + 1 - currentPrice);
+  }, [recentBoard, activeBoard, url, urlFloor]);
 
   const projectedTotal = useMemo(() => {
     if (!url.trim()) return bidAmount;
@@ -352,12 +371,12 @@ export default function Hero() {
                   <button
                     type="button"
                     onClick={() => {
-                      applyBid(2);
+                      applyBid(urlFloor);
                       urlInputRef.current?.focus();
                     }}
                     className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
                   >
-                    $2
+                    ${urlFloor}
                   </button>
                 </>
               ) : (
@@ -366,12 +385,12 @@ export default function Hero() {
                   <button
                     type="button"
                     onClick={() => {
-                      applyBid(2);
+                      applyBid(urlFloor);
                       urlInputRef.current?.focus();
                     }}
                     className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
                   >
-                    $2
+                    ${urlFloor}
                   </button>
                   {" — "}
                   <button
@@ -493,6 +512,9 @@ export default function Hero() {
                   {" · "}all time #{expectedRank}
                 </span>
               </>
+            )}
+            {urlFloor === LOL_MIN_BID && (
+              <span className="text-secondary/70">{" · "}$1 min for .lol</span>
             )}
             {!wouldTakeHof && expectedRecentRank > 1 && amountForRecentRank1 < amountForRank1 && (
               <>

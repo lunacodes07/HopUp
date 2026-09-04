@@ -26,6 +26,7 @@ export default function Pricing() {
         <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2 text-base text-secondary mb-8">
           <span>
             <span className="font-semibold text-accent text-lg">$2</span> minimum
+            <span className="text-secondary/70"> · $1 for .lol</span>
           </span>
           <span className="text-border hidden sm:inline">·</span>
           <span>
