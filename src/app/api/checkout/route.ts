@@ -113,8 +113,15 @@ export async function POST(request: Request) {
         }
       ],
       metadata: metadata,
-      // Dynamically get the origin to return the user to the correct environment
-      return_url: request.headers.get('origin') ? `${request.headers.get('origin')}?success=true` : 'http://localhost:3000/?success=true',
+      return_url: (() => {
+        const origin = request.headers.get('origin') || 'http://localhost:3000';
+        const next = new URL(origin);
+        next.searchParams.set('success', '1');
+        next.searchParams.set('hop', url);
+        if (kind === 'sponsored') next.searchParams.set('kind', 'sponsored');
+        if (kind !== 'sponsored' && bidAmount) next.searchParams.set('bid', String(bidAmount));
+        return next.toString();
+      })(),
     });
 
     // Return the secure checkout link to the client

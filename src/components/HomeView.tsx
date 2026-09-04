@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import LiveLeaderboard from "@/components/LiveLeaderboard";
 import WhyFounders from "@/components/WhyFounders";
 import Pricing from "@/components/Pricing";
 import Footer from "@/components/Footer";
+import ShareAfterPayment from "@/components/ShareAfterPayment";
 import type { BoardMode } from "@/lib/pagination";
 import type { Product } from "@/types";
 
@@ -28,6 +30,9 @@ export default function HomeView({
         <Pricing />
       </main>
       <Footer />
+      <Suspense fallback={null}>
+        <ShareAfterPayment products={products} />
+      </Suspense>
     </>
   );
 }
