@@ -15,7 +15,9 @@
 
 # next.js
 /.next/
+/.next-sandbox/
 /out/
+.data/
 
 # production
 /build

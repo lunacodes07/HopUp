@@ -22,8 +22,6 @@ export default async function ListingCard({ params }: ImageProps) {
     rank: product?.rank ?? 1,
     price: product?.price || 2,
     host,
-    logoSrc: host
-      ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`
-      : null,
+    pageUrl: product?.url || (host ? `https://${host}` : null),
   });
 }

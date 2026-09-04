@@ -1,5 +1,3 @@
-import { productPath } from "@/lib/product-path";
-import { SITE_URL } from "@/lib/site";
 import type { Product } from "@/types";
 
 export type ShareKind = "hop" | "sponsored";
@@ -9,7 +7,6 @@ export type SharePayload = {
   rank: number;
   price: number;
   url?: string;
-  listingPath?: string;
   kind?: ShareKind;
 };
 
@@ -23,7 +20,7 @@ export function shareCaption(payload: SharePayload) {
 
   if (payload.kind === "sponsored") {
     return [
-      `just grabbed a sponsored spot on @hopuplol`,
+      `just grabbed a sponsored spot on hopup.lol by @alohaproxy`,
       ``,
       `${payload.name} · ${bid}`,
     ].join("\n");
@@ -31,33 +28,36 @@ export function shareCaption(payload: SharePayload) {
 
   if (payload.rank === 0) {
     return [
-      `just claimed Hall of Fame on @hopuplol`,
+      `just claimed Hall of Fame on hopup.lol by @alohaproxy`,
       ``,
       `${payload.name} · ${bid}`,
       ``,
-      `someone's gonna have to pay more`,
+      `someone's gonna have to pay more 👀`,
     ].join("\n");
   }
 
   return [
-    `just hopped ${payload.name} to ${spot} on @hopuplol`,
+    `just hopped ${payload.name} to ${spot} on hopup.lol by @alohaproxy`,
     ``,
     `${bid} → ${spot}`,
     ``,
-    `someone's gonna have to pay more`,
+    `someone's gonna have to pay more 👀`,
   ].join("\n");
 }
 
-export function sharePageUrl(payload: SharePayload) {
-  if (payload.listingPath) return `${SITE_URL}${payload.listingPath}`;
-  return SITE_URL;
+export function xShareUrl(caption: string) {
+  return `https://x.com/intent/tweet?${new URLSearchParams({ text: caption })}`;
 }
 
-export function xShareUrl(payload: SharePayload, caption = shareCaption(payload)) {
-  const intent = new URL("https://x.com/intent/post");
-  intent.searchParams.set("text", caption);
-  intent.searchParams.set("url", sharePageUrl(payload));
-  return intent.toString();
+export function shareImagePath(payload: SharePayload) {
+  const params = new URLSearchParams({
+    name: payload.name,
+    rank: String(payload.rank),
+    price: String(payload.price),
+    kind: payload.kind || "hop",
+  });
+  if (payload.url) params.set("url", payload.url);
+  return `/api/og?${params.toString()}`;
 }
 
 export function shareFromProduct(product: Product, kind: ShareKind = "hop"): SharePayload {
@@ -66,7 +66,6 @@ export function shareFromProduct(product: Product, kind: ShareKind = "hop"): Sha
     rank: product.rank,
     price: product.price,
     url: product.url,
-    listingPath: productPath(product),
     kind,
   };
 }

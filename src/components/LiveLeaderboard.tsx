@@ -7,7 +7,7 @@ import { motion, AnimatePresence, useSpring, useTransform } from "framer-motion"
 import { Search, ArrowRight, Crown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
-import { getLogoUrl, handleLogoError } from "@/lib/logo";
+import { getProxiedLogoUrl, handleLogoError } from "@/lib/logo";
 import { hallOfFameClaimPrice } from "@/lib/hof";
 import { LISTINGS_PER_PAGE, type BoardMode, boardCanonicalPath, boardPath } from "@/lib/pagination";
 import { productPath } from "@/lib/product-path";
@@ -266,7 +266,7 @@ export default function LiveLeaderboard({
                 <div className="relative w-[50px] h-[50px] rounded-2xl overflow-hidden bg-white ring-2 ring-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.55)]">
                   {champion.url ? (
                     <img
-                      src={getLogoUrl(champion.url)}
+                      src={getProxiedLogoUrl(champion.url)}
                       alt=""
                       className="absolute inset-0 w-full h-full object-cover bg-white"
                       onError={(e) => handleLogoError(e.currentTarget, champion.url)}
@@ -514,7 +514,7 @@ export default function LiveLeaderboard({
                       <div className={`relative shrink-0 rounded-xl overflow-hidden bg-muted ${logoRing} ${podium ? "w-14 h-14" : "w-12 h-12 border border-border/40"}`}>
                         {item.url ? (
                           <img
-                            src={getLogoUrl(item.url)}
+                            src={getProxiedLogoUrl(item.url)}
                             alt=""
                             className="absolute inset-0 w-full h-full object-cover bg-white"
                             onError={(e) => handleLogoError(e.currentTarget, item.url)}
@@ -591,7 +591,7 @@ export default function LiveLeaderboard({
                                 <div className="relative shrink-0 w-6 h-6 rounded overflow-hidden bg-muted">
                                   {activity.url ? (
                                     <img
-                                      src={getLogoUrl(activity.url)}
+                                      src={getProxiedLogoUrl(activity.url)}
                                       alt=""
                                       className="absolute inset-0 w-full h-full object-cover bg-white"
                                       onError={(e) => handleLogoError(e.currentTarget, activity.url)}

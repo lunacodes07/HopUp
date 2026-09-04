@@ -102,14 +102,13 @@ export async function POST(request: Request) {
       };
     }
 
-    // Create Dodo Checkout Session
     const checkout = await dodo.checkoutSessions.create({
       billing_currency: 'USD',
       product_cart: [
         {
           product_id: process.env.DODO_DYNAMIC_PRODUCT_ID || "pdt_dummy_123",
           quantity: 1,
-          amount: amountInCents, // Overrides amount for pay-what-you-want products
+          amount: amountInCents,
         }
       ],
       metadata: metadata,
@@ -124,9 +123,7 @@ export async function POST(request: Request) {
       })(),
     });
 
-    // Return the secure checkout link to the client
-    // @ts-ignore - Some API versions return checkout_url, some return url. We'll use checkout_url per convention.
-    const checkoutUrl = (checkout as any).checkout_url || (checkout as any).url;
+    const checkoutUrl = (checkout as { checkout_url?: string; url?: string }).checkout_url || (checkout as { url?: string }).url;
 
     return NextResponse.json({ url: checkoutUrl });
 

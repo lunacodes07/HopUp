@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Webhook } from 'standardwebhooks'; // Real verification
+import { Webhook } from 'standardwebhooks';
 import { applyHopPayment } from '@/lib/apply-hop-payment';
 import { applySponsoredPayment } from '@/lib/apply-sponsored-payment';
 
@@ -12,14 +12,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
     }
 
-    // 1. Verify the signature securely on the server
     const wh = new Webhook(webhookSecret);
     const headersObj = Object.fromEntries(request.headers.entries());
     const event = wh.verify(rawBody, headersObj) as any;
 
-    // 2. Handle specific event types
-    // We listen for payment.succeeded
     if (event.type === 'payment.succeeded') {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('Skipping payment write in local dev so hopup.lol stays untouched.');
+        return NextResponse.json({ received: true, skipped: 'local_dev' });
+      }
+
       const paymentData = event.data;
 
       if (paymentData.metadata?.hopup_kind === 'sponsored') {
@@ -35,13 +37,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
       }
 
-      console.log(`Processing successful payment for ${url} (Bid: $${bidAmount})`);
       await applyHopPayment(paymentData);
-    } else {
-      console.log(`Unhandled event type: ${event.type}`);
     }
 
-    // Return a 200 OK to acknowledge receipt
     return NextResponse.json({ received: true });
 
   } catch (error: any) {

@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { rasterLogoDataUri } from "@/lib/resolve-logo";
 import { rankLabel } from "@/lib/share";
 
 export const SHARE_CARD_SIZE = { width: 1200, height: 630 };
@@ -10,9 +11,13 @@ export type ShareCardInput = {
   rank: number;
   price: number;
   host?: string | null;
+  pageUrl?: string | null;
+  kind?: "hop" | "sponsored";
+};
+
+type ShareCardRender = ShareCardInput & {
   logoSrc?: string | null;
   hopupLogoSrc?: string | null;
-  kind?: "hop" | "sponsored";
 };
 
 function cardTitle(name: string) {
@@ -49,7 +54,7 @@ async function hopupLogo() {
   return hopupLogoData;
 }
 
-export function shareCardElement(card: ShareCardInput) {
+export function shareCardElement(card: ShareCardRender) {
   const isHof = card.rank === 0;
   const isSponsored = card.kind === "sponsored";
   const spot = isSponsored ? "Sponsored" : rankLabel(card.rank);
@@ -246,7 +251,12 @@ export function shareCardElement(card: ShareCardInput) {
 }
 
 export async function shareCardImage(card: ShareCardInput) {
-  const [loaded, brandLogo] = await Promise.all([fonts(), hopupLogo().catch(() => null)]);
+  const pageUrl = card.pageUrl || (card.host ? `https://${card.host}` : null);
+  const [loaded, brandLogo, siteLogo] = await Promise.all([
+    fonts(),
+    hopupLogo().catch(() => null),
+    rasterLogoDataUri(pageUrl).catch(() => null),
+  ]);
   const render = (logoSrc: string | null) =>
     new ImageResponse(shareCardElement({ ...card, logoSrc, hopupLogoSrc: brandLogo }), {
       ...SHARE_CARD_SIZE,
@@ -254,9 +264,9 @@ export async function shareCardImage(card: ShareCardInput) {
     });
 
   try {
-    return render(card.logoSrc || null);
+    return render(siteLogo);
   } catch (err) {
-    if (card.logoSrc) {
+    if (siteLogo) {
       console.error("Share card logo failed, retrying without it:", err);
       return render(null);
     }
