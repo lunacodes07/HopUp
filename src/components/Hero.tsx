@@ -7,6 +7,7 @@ import { ArrowRight, Minus, Plus, Loader2, ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 import { hallOfFameClaimPrice } from "@/lib/hof";
+import { rememberPendingShare } from "@/lib/share";
 import LiveStats from "./LiveStats";
 import Ticker from "./Ticker";
 
@@ -129,6 +130,12 @@ export default function Hero() {
 
     try {
       const { finalUrl, nameFallback } = getFormattedUrlInfo(url);
+      rememberPendingShare({
+        url: finalUrl,
+        bid: bidAmount,
+        name: nameFallback,
+        kind: "hop",
+      });
 
       const response = await fetch("/api/checkout", {
         method: "POST",

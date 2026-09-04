@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import { getLogoUrl } from "@/lib/logo";
+import { getProxiedLogoUrl } from "@/lib/logo";
 
 export async function fetchMetadata(targetUrl: string) {
   let formattedUrl = targetUrl;
@@ -7,7 +7,7 @@ export async function fetchMetadata(targetUrl: string) {
     formattedUrl = "https://" + formattedUrl;
   }
 
-  const fallbackLogo = getLogoUrl(formattedUrl);
+  const fallbackLogo = getProxiedLogoUrl(formattedUrl);
 
   try {
     const controller = new AbortController();

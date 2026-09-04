@@ -8,6 +8,8 @@ import VisitSiteButton from "@/components/VisitSiteButton";
 import { getProxiedLogoUrl } from "@/lib/logo";
 import { displayHost, productPath, productSlug, toExternalUrl } from "@/lib/product-path";
 import { findProductBySlug, getRankedProducts, withBoardRanks } from "@/lib/products-server";
+import ShareListingButton from "@/components/ShareListingButton";
+import { shareFromProduct } from "@/lib/share";
 import { SITE_URL } from "@/lib/site";
 import { getTimeAgo } from "@/lib/time-ago";
 import type { Product } from "@/types";
@@ -56,7 +58,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         type: "website",
       },
       twitter: {
-        card: "summary",
+        card: "summary_large_image",
         title,
         description,
       },
@@ -230,6 +232,10 @@ export default async function ProductListingPage({ params }: PageProps) {
                 Hop this
                 <ArrowRight className="w-4 h-4" />
               </Link>
+              <ShareListingButton
+                payload={shareFromProduct(product)}
+                className="inline-flex items-center justify-center gap-1.5 border border-border bg-white/70 px-6 py-2.5 rounded-full text-[15px] font-semibold text-foreground hover:border-accent/50 hover:text-accent transition-colors"
+              />
             </div>
           </article>
 

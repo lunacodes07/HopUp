@@ -6,6 +6,7 @@ import { ArrowRight, ChevronDown, Loader2, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getFormattedUrlInfo } from "@/lib/format-url";
 import { getProxiedLogoUrl, handleLogoError } from "@/lib/logo";
+import { rememberPendingShare } from "@/lib/share";
 import { SPONSOR_PLANS, SPONSOR_SLOT_COUNT, type SponsorPlan } from "@/lib/sponsored";
 import type { SponsoredSlot } from "@/types";
 
@@ -167,6 +168,12 @@ function SponsorModal({
 
     try {
       const { finalUrl, nameFallback } = getFormattedUrlInfo(url);
+      rememberPendingShare({
+        url: finalUrl,
+        bid: plan.price,
+        name: nameFallback,
+        kind: "sponsored",
+      });
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
