@@ -68,11 +68,11 @@ export default function WhyFounders() {
           </span>
           <span className="text-border hidden sm:inline">·</span>
           <span>
-            <span className="font-semibold text-foreground tabular-nums text-lg">165+</span> signups
+            <span className="font-semibold text-foreground tabular-nums text-lg">250+</span> signups
           </span>
           <span className="text-border hidden sm:inline">·</span>
           <span>
-            <span className="font-semibold text-foreground tabular-nums text-lg">35+</span> demo calls
+            <span className="font-semibold text-foreground tabular-nums text-lg">95+</span> demo calls
           </span>
         </div>
       </div>

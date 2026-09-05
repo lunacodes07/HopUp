@@ -6,6 +6,7 @@ import { ArrowRight, ChevronDown, Loader2, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getFormattedUrlInfo } from "@/lib/format-url";
 import { getProxiedLogoUrl, handleLogoError } from "@/lib/logo";
+import { withHopupRef } from "@/lib/product-path";
 import { rememberPendingShare } from "@/lib/share";
 import { SPONSOR_PLANS, SPONSOR_SLOT_COUNT, type SponsorPlan } from "@/lib/sponsored";
 import type { SponsoredSlot } from "@/types";
@@ -57,7 +58,7 @@ function EmptyCard({ n, onClaim }: { n: number; onClaim: (n: number) => void }) 
 }
 
 function FilledCard({ slot }: { slot: SponsoredSlot }) {
-  const href = slot.url && !slot.url.startsWith("http") ? `https://${slot.url}` : slot.url;
+  const href = withHopupRef(slot.url) || slot.url;
 
   const trackClick = () => {
     supabase.rpc("increment_sponsored_clicks", { p_slot_id: slot.id }).then(({ error }) => {

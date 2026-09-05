@@ -1,5 +1,6 @@
 "use client";
 
+import { withHopupRef } from "@/lib/product-path";
 import { trackProductClick } from "@/lib/track-click";
 
 type VisitSiteButtonProps = {
@@ -16,10 +17,11 @@ export default function VisitSiteButton({
   children,
 }: VisitSiteButtonProps) {
   const track = () => trackProductClick(productId);
+  const outbound = withHopupRef(href) || href;
 
   return (
     <a
-      href={href}
+      href={outbound}
       target="_blank"
       rel="noopener noreferrer"
       onClick={track}
