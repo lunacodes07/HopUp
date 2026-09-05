@@ -48,6 +48,23 @@ export function toExternalUrl(raw?: string | null): string | null {
   return raw.startsWith("http") ? raw : `https://${raw}`;
 }
 
+export const HOPUP_REF = "hopup";
+
+export function withHopupRef(raw?: string | null): string | null {
+  const href = toExternalUrl(raw);
+  if (!href) return null;
+  try {
+    const next = new URL(href);
+    if (!next.searchParams.has("ref")) {
+      next.searchParams.set("ref", HOPUP_REF);
+    }
+    return next.toString();
+  } catch {
+    const sep = href.includes("?") ? "&" : "?";
+    return `${href}${sep}ref=${HOPUP_REF}`;
+  }
+}
+
 export function displayHost(raw?: string | null): string | null {
   const href = toExternalUrl(raw);
   if (!href) return null;
