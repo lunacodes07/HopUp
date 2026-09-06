@@ -144,7 +144,12 @@ export default async function CreatorStatsPage({ params, searchParams }: PagePro
                   >
                     <div className="min-w-0">
                       <p className="text-[14px] font-semibold truncate">
-                        {sale.kind === "sponsored" ? "Sponsored" : "Hop"} · {dollars(sale.amount_cents)}
+                        {sale.kind === "sponsored"
+                          ? "Sponsored"
+                          : sale.kind === "stanley"
+                            ? "Stanley"
+                            : "Hop"}{" "}
+                        · {dollars(sale.amount_cents)}
                       </p>
                       <p className="text-[12px] text-secondary truncate">
                         {displayHost(sale.url) || "hopup.lol"} · {getTimeAgo(sale.created_at) || "just now"}

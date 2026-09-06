@@ -68,6 +68,12 @@ export default function ShareAfterPayment({ products = [] }: { products?: Produc
         ? "sponsored"
         : "hop";
 
+    // Brand My Stuff has no share card — don't treat a Stanley return as a hop.
+    if (searchParams.get("kind") === "stanley" || String(pending?.kind) === "stanley") {
+      clearPendingShare();
+      return;
+    }
+
     if (!hopUrl) return;
 
     const seed: PendingShare = pending || {
@@ -95,6 +101,7 @@ export default function ShareAfterPayment({ products = [] }: { products?: Produc
     next.delete("hop");
     next.delete("kind");
     next.delete("bid");
+    next.delete("slot");
     const query = next.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }, [pathname, products, router, searchParams]);

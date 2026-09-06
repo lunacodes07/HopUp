@@ -53,7 +53,7 @@ const SLOT_SPECS: SlotSpec[] = [
     n: i + 1,
     y: 2.63,
     centerTheta: UPPER_PHASE + i * RING_STEP,
-    radius: BODY_RADIUS + 0.015,
+    radius: BODY_RADIUS + 0.045,
     height: 0.84,
     thetaWidth: 0.78,
   })),
@@ -62,7 +62,7 @@ const SLOT_SPECS: SlotSpec[] = [
     n: i + 7,
     y: 0.9,
     centerTheta: LOWER_PHASE + i * RING_STEP,
-    radius: 0.665,
+    radius: 0.70,
     height: 0.58,
     thetaWidth: 0.86,
   })),
@@ -153,72 +153,138 @@ function makeSelectionRingTexture(): THREE.CanvasTexture {
 /* Scene pieces                                                        */
 /* ------------------------------------------------------------------ */
 
+function makeLogoStickerTexture(img: HTMLImageElement): THREE.CanvasTexture {
+  const size = 512;
+  const pad = 40;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+
+  roundedRectPath(ctx, 10, 10, size - 20, size - 20, 56);
+  ctx.fillStyle = "rgba(255,255,255,0.94)";
+  ctx.fill();
+
+  const srcW = img.naturalWidth || img.width;
+  const srcH = img.naturalHeight || img.height;
+  const scale = Math.min((size - pad * 2) / srcW, (size - pad * 2) / srcH);
+  const w = srcW * scale;
+  const h = srcH * scale;
+  ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function useSlotLogoTexture(logoUrl: string | null) {
+  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
+
+  useEffect(() => {
+    if (!logoUrl) {
+      setTexture(null);
+      return;
+    }
+
+    let cancelled = false;
+    const img = new Image();
+    if (!logoUrl.startsWith("data:")) img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      if (cancelled) return;
+      setTexture(makeLogoStickerTexture(img));
+    };
+    img.onerror = () => {
+      if (!cancelled) setTexture(null);
+    };
+    img.src = logoUrl;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [logoUrl]);
+
+  useEffect(() => {
+    return () => {
+      texture?.dispose();
+    };
+  }, [texture]);
+
+  return texture;
+}
+
 function SlotPatch({
   spec,
   logoUrl,
   selected,
   onSelect,
+  onHover,
 }: {
   spec: SlotSpec;
   logoUrl: string | null;
   selected: boolean;
   onSelect: (n: number) => void;
+  onHover?: (n: number | null) => void;
 }) {
+  const logoTexture = useSlotLogoTexture(logoUrl);
   const emptyTexture = useMemo(
-    () => (logoUrl ? null : makeEmptySlotTexture(spec.n, selected, slotPrice(spec.n))),
-    [logoUrl, selected, spec.n]
-  );
-
-  const logoTexture = useMemo(() => {
-    if (!logoUrl) return null;
-    const t = new THREE.TextureLoader().load(logoUrl);
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = 8;
-    return t;
-  }, [logoUrl]);
-
-  const ringTexture = useMemo(
-    () => (selected && logoUrl ? makeSelectionRingTexture() : null),
-    [selected, logoUrl]
+    () => (logoTexture ? null : makeEmptySlotTexture(spec.n, selected, slotPrice(spec.n))),
+    [logoTexture, selected, spec.n]
   );
 
   useEffect(() => {
     return () => {
       emptyTexture?.dispose();
-      logoTexture?.dispose();
-      ringTexture?.dispose();
     };
-  }, [emptyTexture, logoTexture, ringTexture]);
+  }, [emptyTexture]);
 
-  const thetaStart = spec.centerTheta - spec.thetaWidth / 2;
-  const map = logoTexture ?? emptyTexture;
+  const width = spec.thetaWidth * spec.radius;
+  const pointer = {
+    onClick: (e: { stopPropagation: () => void }) => {
+      e.stopPropagation();
+      onSelect(spec.n);
+    },
+    onPointerOver: () => {
+      document.body.style.cursor = "pointer";
+      onHover?.(spec.n);
+    },
+    onPointerOut: () => {
+      document.body.style.cursor = "auto";
+      onHover?.(null);
+    },
+  };
 
   return (
-    <group>
-      <mesh
-        position={[0, spec.y, 0]}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(spec.n);
-        }}
-        onPointerOver={() => (document.body.style.cursor = "pointer")}
-        onPointerOut={() => (document.body.style.cursor = "auto")}
-      >
-        <cylinderGeometry
-          args={[spec.radius, spec.radius, spec.height, 24, 1, true, thetaStart, spec.thetaWidth]}
+    <mesh
+      position={[
+        spec.radius * Math.sin(spec.centerTheta),
+        spec.y,
+        spec.radius * Math.cos(spec.centerTheta),
+      ]}
+      rotation={[0, spec.centerTheta, 0]}
+      {...pointer}
+    >
+      <planeGeometry args={[width, spec.height]} />
+      {logoTexture ? (
+        <meshBasicMaterial
+          map={logoTexture}
+          transparent
+          toneMapped={false}
+          depthWrite={false}
+          side={THREE.DoubleSide}
         />
-        <meshStandardMaterial map={map} transparent roughness={0.5} metalness={0.05} polygonOffset polygonOffsetFactor={-1} />
-      </mesh>
-
-      {ringTexture && (
-        <mesh position={[0, spec.y, 0]}>
-          <cylinderGeometry
-            args={[spec.radius + 0.004, spec.radius + 0.004, spec.height + 0.05, 24, 1, true, thetaStart - 0.02, spec.thetaWidth + 0.04]}
-          />
-          <meshBasicMaterial map={ringTexture} transparent polygonOffset polygonOffsetFactor={-2} />
-        </mesh>
+      ) : (
+        <meshStandardMaterial
+          map={emptyTexture}
+          transparent
+          roughness={0.5}
+          metalness={0.05}
+          side={THREE.DoubleSide}
+        />
       )}
-    </group>
+    </mesh>
   );
 }
 
@@ -393,32 +459,37 @@ function Turntable({
 /* ------------------------------------------------------------------ */
 
 export type TumblerViewerProps = {
-  /** slot number -> square-fit logo data URL */
+  /** slot number -> square-fit logo data URL or proxied logo */
   slotLogos: Record<number, string>;
   selectedSlot: number;
   onSelectSlot: (n: number) => void;
+  onHoverSlot?: (n: number | null) => void;
 };
 
 export default function TumblerViewer({
   slotLogos,
   selectedSlot,
   onSelectSlot,
+  onHoverSlot,
 }: TumblerViewerProps) {
   const [autoRotate, setAutoRotate] = useState(true);
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const skipFirstFace = useRef(true);
 
+  const selectedHasLogo = Boolean(slotLogos[selectedSlot]);
+
   useEffect(() => {
-    if (skipFirstFace.current) {
+    if (skipFirstFace.current && !selectedHasLogo) {
       skipFirstFace.current = false;
       return;
     }
+    skipFirstFace.current = false;
     setAutoRotate(false);
     const controls = controlsRef.current;
     if (!controls) return;
     controls.setAzimuthalAngle(0);
     controls.update();
-  }, [selectedSlot]);
+  }, [selectedSlot, selectedHasLogo]);
 
   return (
     <Canvas
@@ -445,6 +516,7 @@ export default function TumblerViewer({
             logoUrl={slotLogos[spec.n] ?? null}
             selected={selectedSlot === spec.n}
             onSelect={onSelectSlot}
+            onHover={onHoverSlot}
           />
         ))}
       </Turntable>

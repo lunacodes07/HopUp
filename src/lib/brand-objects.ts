@@ -12,8 +12,8 @@ export type BrandObject = {
   tint: string;
 };
 
-export const SLOT_PRICE = 30; // large slots (upper ring)
-export const SMALL_SLOT_PRICE = 15; // small slots (base ring)
+export const SLOT_PRICE = 35; // large slots (upper ring)
+export const SMALL_SLOT_PRICE = 20; // small slots (base ring)
 export const LARGE_SLOT_COUNT = 6;
 export const STANLEY_SLOT_COUNT = 12;
 

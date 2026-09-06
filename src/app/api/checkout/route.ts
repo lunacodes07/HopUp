@@ -5,11 +5,14 @@ import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
 import { cookies } from 'next/headers';
 import { minBidForUrl } from '@/lib/bid';
-import { isProductCategory } from '@/lib/categories';
+import { DEFAULT_CATEGORY, isProductCategory } from '@/lib/categories';
 import { CREATOR_COOKIE } from '@/lib/creators';
 import { getCreatorBySlug } from '@/lib/creators-server';
 import { getSponsorPlan, isValidSlotNumber } from '@/lib/sponsored';
 import { isSlotAvailable } from '@/lib/sponsored-server';
+import { isValidStanleySlot, stanleySlotPrice } from '@/lib/stanley-slots';
+import { isStanleySlotAvailable } from '@/lib/stanley-slots-server';
+import { getFormattedUrlInfo } from '@/lib/format-url';
 
 // Safely initialize Upstash Ratelimit only if the environment variables exist
 const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN 
@@ -40,21 +43,53 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { url, bidAmount, category, nameFallback, kind, slotNumber, weeks } = body;
 
-    if (!url || !category) {
-      return NextResponse.json({ error: 'Missing url or category' }, { status: 400 });
-    }
-
-    if (!isProductCategory(category)) {
-      return NextResponse.json({ error: 'Choose a valid category' }, { status: 400 });
-    }
-
     const refSlug = (await cookies()).get(CREATOR_COOKIE)?.value;
     const creator = await getCreatorBySlug(refSlug);
 
     let amountInCents = 0;
     let metadata: Record<string, string>;
+    let returnHop = typeof url === 'string' ? url : '';
 
-    if (kind === 'sponsored') {
+    if (kind === 'stanley') {
+      if (typeof url !== 'string' || !url.trim()) {
+        return NextResponse.json({ error: 'Add your link first' }, { status: 400 });
+      }
+      if (!isValidStanleySlot(slotNumber)) {
+        return NextResponse.json({ error: 'Invalid Stanley spot' }, { status: 400 });
+      }
+
+      const { finalUrl, nameFallback: fromUrl } = getFormattedUrlInfo(url);
+      const price = stanleySlotPrice(slotNumber);
+
+      try {
+        const open = await isStanleySlotAvailable(slotNumber);
+        if (!open) {
+          return NextResponse.json({ error: 'That spot is already taken. Pick another.' }, { status: 409 });
+        }
+      } catch (err: any) {
+        console.error('Stanley slot availability check failed:', err);
+        return NextResponse.json({ error: 'Stanley spots are not available yet' }, { status: 503 });
+      }
+
+      amountInCents = price * 100;
+      returnHop = finalUrl;
+      metadata = {
+        hopup_kind: 'stanley',
+        hopup_url: finalUrl,
+        hopup_bid_amount: price.toString(),
+        hopup_category: DEFAULT_CATEGORY,
+        hopup_name_fallback: nameFallback || fromUrl || finalUrl,
+        hopup_slot: String(slotNumber),
+        ...(creator ? { hopup_ref: creator.slug } : {}),
+      };
+    } else if (kind === 'sponsored') {
+      if (!url || !category) {
+        return NextResponse.json({ error: 'Missing url or category' }, { status: 400 });
+      }
+
+      if (!isProductCategory(category)) {
+        return NextResponse.json({ error: 'Choose a valid category' }, { status: 400 });
+      }
       const plan = getSponsorPlan(weeks);
       if (!plan) {
         return NextResponse.json({ error: 'Choose 1, 2, or 4 weeks' }, { status: 400 });
@@ -85,6 +120,13 @@ export async function POST(request: Request) {
         ...(creator ? { hopup_ref: creator.slug } : {}),
       };
     } else {
+      if (!url || !category) {
+        return NextResponse.json({ error: 'Missing url or category' }, { status: 400 });
+      }
+
+      if (!isProductCategory(category)) {
+        return NextResponse.json({ error: 'Choose a valid category' }, { status: 400 });
+      }
       if (!bidAmount) {
         return NextResponse.json({ error: 'Missing url, bidAmount, or category' }, { status: 400 });
       }
@@ -131,9 +173,14 @@ export async function POST(request: Request) {
         const origin = request.headers.get('origin') || 'http://localhost:3000';
         const next = new URL(origin);
         next.searchParams.set('success', '1');
-        next.searchParams.set('hop', url);
+        next.searchParams.set('hop', returnHop);
         if (kind === 'sponsored') next.searchParams.set('kind', 'sponsored');
-        if (kind !== 'sponsored' && bidAmount) next.searchParams.set('bid', String(bidAmount));
+        if (kind === 'stanley') {
+          next.pathname = '/brandmystanley';
+          next.searchParams.set('kind', 'stanley');
+          next.searchParams.set('slot', String(slotNumber));
+        }
+        if (kind !== 'sponsored' && kind !== 'stanley' && bidAmount) next.searchParams.set('bid', String(bidAmount));
         return next.toString();
       })(),
     });

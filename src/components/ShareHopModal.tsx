@@ -27,7 +27,8 @@ export default function ShareHopModal({
   const [cardFailed, setCardFailed] = useState(false);
   const previewSrc = shareImagePath(payload);
   const label =
-    kicker || (payload.kind === "sponsored" ? "You're featured" : "You hopped");
+    kicker ||
+    (payload.kind === "sponsored" ? "You're featured" : "You hopped");
 
   useEffect(() => {
     setCaption(shareCaption(payload));

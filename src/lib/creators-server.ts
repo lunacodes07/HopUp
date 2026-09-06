@@ -13,7 +13,7 @@ export type Creator = {
 export type ReferralSale = {
   id: string;
   created_at: string;
-  kind: "hop" | "sponsored";
+  kind: "hop" | "sponsored" | "stanley";
   amount_cents: number;
   commission_cents: number;
   url: string | null;
@@ -47,7 +47,12 @@ export async function recordReferralSale(paymentData: {
 }) {
   const slug = normalizeCreatorSlug(paymentData.metadata?.hopup_ref);
   const amount = parseInt(paymentData.metadata?.hopup_bid_amount || "0", 10);
-  const kind = paymentData.metadata?.hopup_kind === "sponsored" ? "sponsored" : "hop";
+  const kind =
+    paymentData.metadata?.hopup_kind === "sponsored"
+      ? "sponsored"
+      : paymentData.metadata?.hopup_kind === "stanley"
+        ? "stanley"
+        : "hop";
   const url = paymentData.metadata?.hopup_url || null;
   const paymentId = String(paymentData.payment_id || paymentData.id || "");
 

@@ -24,3 +24,12 @@ export type SponsoredSlot = {
   expires_at: string;
   created_at?: string;
 };
+
+export type StanleySlot = {
+  id: string;
+  slot_number: number;
+  name: string;
+  url: string;
+  price: number;
+  created_at?: string;
+};

@@ -6,9 +6,11 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { RotateCcw } from "lucide-react";
 import CustomizerControls from "./CustomizerControls";
-import { STANLEY_SLOT_COUNT, stanleyCapacity, stanleyRaised } from "@/lib/brand-objects";
+import { STANLEY_SLOT_COUNT, slotPrice, stanleyCapacity } from "@/lib/brand-objects";
 import { getFormattedUrlInfo } from "@/lib/format-url";
 import { getProxiedLogoUrl } from "@/lib/logo";
+import { supabase } from "@/lib/supabase";
+import type { StanleySlot } from "@/lib/stanley-slots";
 
 /** Matches TUMBLER_PINK in TumblerViewer (kept literal so this file doesn't import the 3D bundle). */
 const PINK = "#F2AFC9";
@@ -83,12 +85,105 @@ function displayBrandOf(raw: string): string {
   return nameFallback.replace(/^www\./, "");
 }
 
-export default function StanleyExperience() {
+function firstOpenSlot(claimed: Record<number, StanleySlot>) {
+  for (let n = 1; n <= SLOT_COUNT; n++) {
+    if (!claimed[n]) return n;
+  }
+  return 1;
+}
+
+function indexClaimed(rows: StanleySlot[]) {
+  const next: Record<number, StanleySlot> = {};
+  for (const row of rows) next[row.slot_number] = row;
+  return next;
+}
+
+export default function StanleyExperience({
+  initialSlots = [],
+}: {
+  initialSlots?: StanleySlot[];
+}) {
+  const [claimedBySlot, setClaimedBySlot] = useState<Record<number, StanleySlot>>(() =>
+    indexClaimed(initialSlots)
+  );
   const [slotLogos, setSlotLogos] = useState<Record<number, string>>({});
-  const [selectedSlot, setSelectedSlot] = useState(1);
+  const [selectedSlot, setSelectedSlot] = useState(() => firstOpenSlot(indexClaimed(initialSlots)));
+  const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
   const [brandUrl, setBrandUrl] = useState("");
   const [fetchedLogo, setFetchedLogo] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("stanley_slots")
+        .select("id, slot_number, name, url, price, created_at");
+      if (error) {
+        if (error.code !== "PGRST205") {
+          console.warn(error.message || "Stanley slots are not loaded yet");
+        }
+        return;
+      }
+      setClaimedBySlot(indexClaimed((data as StanleySlot[]) ?? []));
+    };
+
+    void load();
+    const subscription = supabase
+      .channel("stanley_slots_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "stanley_slots" },
+        () => {
+          void load();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
+
+  // After a local Dodo test checkout, pull the succeeded payment and fill the slot.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") !== "1" || params.get("kind") !== "stanley") return;
+    const slot = Number(params.get("slot"));
+    const url = params.get("hop") || "";
+    const paymentId = params.get("payment_id") || "";
+    if (!url || !slot) return;
+
+    let cancelled = false;
+    const run = async () => {
+      for (let attempt = 0; attempt < 6 && !cancelled; attempt++) {
+        try {
+          const response = await fetch("/api/stanley/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url, slot, paymentId }),
+          });
+          const data = await response.json();
+          if (data.applied || data.duplicate || data.skipped) {
+            const { data: rows } = await supabase
+              .from("stanley_slots")
+              .select("id, slot_number, name, url, price, created_at");
+            if (!cancelled && rows) setClaimedBySlot(indexClaimed(rows as StanleySlot[]));
+            return;
+          }
+        } catch {
+          // Payment may not be listed yet — retry.
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Same as the leaderboard: if they skip an upload, pull the logo from the URL.
   useEffect(() => {
@@ -116,18 +211,24 @@ export default function StanleyExperience() {
     };
   }, [brandUrl]);
 
-  const selectSlot = useCallback((n: number) => {
-    setSelectedSlot(n);
-    requestAnimationFrame(() => {
-      document.getElementById("claim-spot")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
+  const selectSlot = useCallback(
+    (n: number) => {
+      setSelectedSlot(n);
+      setClaimError(null);
+      if (claimedBySlot[n]) return;
+      requestAnimationFrame(() => {
+        document.getElementById("claim-spot")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       });
-    });
-  }, []);
+    },
+    [claimedBySlot]
+  );
 
   const handleUpload = useCallback(
     async (file: File) => {
+      if (claimedBySlot[selectedSlot]) return;
       setUploadError(null);
       try {
         const dataUrl = await fitLogoToSquare(file);
@@ -136,7 +237,7 @@ export default function StanleyExperience() {
         setUploadError("Could not read that image. Try a PNG or JPG.");
       }
     },
-    [selectedSlot]
+    [claimedBySlot, selectedSlot]
   );
 
   const clearSlot = useCallback(() => {
@@ -147,18 +248,61 @@ export default function StanleyExperience() {
     });
   }, [selectedSlot]);
 
-  const displayLogos = useMemo(() => {
-    const next = { ...slotLogos };
-    if (fetchedLogo && !slotLogos[selectedSlot]) {
-      next[selectedSlot] = fetchedLogo;
+  const claimedLogos = useMemo(() => {
+    const next: Record<number, string> = {};
+    for (const [key, row] of Object.entries(claimedBySlot)) {
+      next[Number(key)] = getProxiedLogoUrl(row.url);
     }
     return next;
-  }, [slotLogos, fetchedLogo, selectedSlot]);
+  }, [claimedBySlot]);
+
+  const displayLogos = useMemo(() => {
+    const next = { ...claimedLogos };
+    if (claimedBySlot[selectedSlot]) return next;
+    const preview = slotLogos[selectedSlot] || fetchedLogo;
+    if (preview) next[selectedSlot] = preview;
+    return next;
+  }, [claimedLogos, claimedBySlot, fetchedLogo, selectedSlot, slotLogos]);
+
+  const handleClaim = useCallback(async () => {
+    if (claiming || claimedBySlot[selectedSlot]) return;
+    const trimmed = brandUrl.trim();
+    if (trimmed.length < 3) {
+      setClaimError("Add your site or @handle first.");
+      return;
+    }
+
+    setClaiming(true);
+    setClaimError(null);
+
+    try {
+      const { finalUrl, nameFallback } = getFormattedUrlInfo(trimmed);
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "stanley",
+          url: finalUrl,
+          nameFallback,
+          slotNumber: selectedSlot,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to start checkout");
+      if (!data.url) throw new Error("No checkout URL returned.");
+      window.location.href = data.url;
+    } catch (err) {
+      console.error("Stanley checkout failed:", err);
+      setClaimError(err instanceof Error ? err.message : "Failed to start checkout.");
+      setClaiming(false);
+    }
+  }, [brandUrl, claiming, claimedBySlot, selectedSlot]);
 
   const traveler = displayBrandOf(brandUrl);
-  const filledSlots = Object.keys(slotLogos).map(Number);
+  const filledSlots = Object.keys(claimedBySlot).map(Number);
   const filledCount = filledSlots.length;
-  const raised = stanleyRaised(filledSlots);
+  const raised = Object.values(claimedBySlot).reduce((sum, row) => sum + row.price, 0);
+  const hoveredClaimed = hoveredSlot != null ? claimedBySlot[hoveredSlot] : undefined;
   const capacity = stanleyCapacity(SLOT_COUNT);
   const raisedPct = capacity > 0 ? Math.min(100, (raised / capacity) * 100) : 0;
 
@@ -258,6 +402,7 @@ export default function StanleyExperience() {
                 slotLogos={displayLogos}
                 selectedSlot={selectedSlot}
                 onSelectSlot={selectSlot}
+                onHoverSlot={setHoveredSlot}
               />
             </div>
 
@@ -268,7 +413,13 @@ export default function StanleyExperience() {
 
             <div className="absolute bottom-3.5 left-0 right-0 flex justify-center pointer-events-none px-4">
               <span className="rounded-full bg-white/80 backdrop-blur px-3.5 py-1.5 text-[12px] font-medium text-secondary border border-border/60 truncate max-w-full">
-                {traveler ? (
+                {hoveredClaimed ? (
+                  <>
+                    <span className="font-semibold text-foreground">{hoveredClaimed.name}</span>
+                    {" · "}
+                    {hoveredClaimed.url.replace(/^https?:\/\//, "")}
+                  </>
+                ) : traveler ? (
                   <>
                     <span className="font-semibold text-foreground">{traveler}</span> travels with me
                     {filledCount > 0 && (
@@ -294,11 +445,15 @@ export default function StanleyExperience() {
               selectedSlot={selectedSlot}
               onSelectSlot={selectSlot}
               slotLogos={displayLogos}
+              claimedBySlot={claimedBySlot}
               uploaded={Boolean(slotLogos[selectedSlot])}
               onUploadLogo={handleUpload}
               onClearSlot={clearSlot}
               brandUrl={brandUrl}
               onBrandUrlChange={setBrandUrl}
+              onClaim={handleClaim}
+              claiming={claiming}
+              claimError={claimError}
             />
           </div>
         </motion.div>
