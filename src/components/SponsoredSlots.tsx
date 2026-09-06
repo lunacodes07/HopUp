@@ -8,20 +8,11 @@ import { getFormattedUrlInfo } from "@/lib/format-url";
 import { getProxiedLogoUrl, handleLogoError } from "@/lib/logo";
 import { withHopupRef } from "@/lib/product-path";
 import { rememberPendingShare } from "@/lib/share";
+import { DEFAULT_CATEGORY, PRODUCT_CATEGORIES } from "@/lib/categories";
 import { SPONSOR_PLANS, SPONSOR_SLOT_COUNT, type SponsorPlan } from "@/lib/sponsored";
 import type { SponsoredSlot } from "@/types";
 
 const SPOTS = [1, 2, 3, 4] as const;
-
-const CATEGORIES = [
-  { value: "DevTools", label: "Developer Tools" },
-  { value: "AI / Builders", label: "AI / Builders" },
-  { value: "AI Agents", label: "AI Agents" },
-  { value: "Marketing", label: "Marketing" },
-  { value: "SEO", label: "SEO" },
-  { value: "Design", label: "Design" },
-  { value: "Other", label: "Other" },
-];
 
 const getTimeLeft = (expiresAt: string) => {
   const ms = new Date(expiresAt).getTime() - Date.now();
@@ -107,7 +98,7 @@ function SponsorModal({
   onClose: () => void;
 }) {
   const [url, setUrl] = useState("");
-  const [category, setCategory] = useState("DevTools");
+  const [category, setCategory] = useState<string>(DEFAULT_CATEGORY);
   const [plan, setPlan] = useState<SponsorPlan>(SPONSOR_PLANS[0]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
@@ -293,7 +284,7 @@ function SponsorModal({
               aria-label="Category"
               className="w-full appearance-none bg-transparent border-b border-foreground/15 focus:border-accent outline-none py-2.5 pr-7 text-base font-medium cursor-pointer transition-colors"
             >
-              {CATEGORIES.map((cat) => (
+              {PRODUCT_CATEGORIES.map((cat) => (
                 <option key={cat.value} value={cat.value}>
                   {cat.label}
                 </option>

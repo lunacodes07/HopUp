@@ -10,13 +10,12 @@ import type { Product } from "@/types";
 import { getProxiedLogoUrl, handleLogoError } from "@/lib/logo";
 import { minBidForUrl } from "@/lib/bid";
 import { hallOfFameClaimPrice } from "@/lib/hof";
+import { BOARD_FILTERS } from "@/lib/categories";
 import { LISTINGS_PER_PAGE, type BoardMode, boardCanonicalPath, boardPath } from "@/lib/pagination";
 import { productPath } from "@/lib/product-path";
 import { trackProductClick } from "@/lib/track-click";
 import Pagination from "./Pagination";
 import SponsoredSlots from "./SponsoredSlots";
-
-const CATEGORIES = ["All", "AI / Builders", "AI Agents", "DevTools", "Marketing", "SEO", "Design", "Other"];
 
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
 
@@ -394,7 +393,7 @@ export default function LiveLeaderboard({
         <div className="flex items-center gap-4 mb-2 border-b border-border/70">
           <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-0.5 w-max pr-2">
-              {CATEGORIES.map((cat) => (
+              {BOARD_FILTERS.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}

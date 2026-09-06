@@ -7,6 +7,7 @@ import { ArrowRight, Minus, Plus, Loader2, ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 import { DEFAULT_MIN_BID, LOL_MIN_BID, minBidForUrl } from "@/lib/bid";
+import { DEFAULT_CATEGORY, PRODUCT_CATEGORIES } from "@/lib/categories";
 import { hallOfFameClaimPrice } from "@/lib/hof";
 import { rememberPendingShare } from "@/lib/share";
 import LiveStats from "./LiveStats";
@@ -19,16 +20,6 @@ const hoppedAt = (item: Product) =>
 
 const matchesUrl = (productUrl: string | undefined, finalUrl: string) =>
   productUrl?.replace(/\/$/, "").toLowerCase() === finalUrl.toLowerCase();
-
-const CATEGORIES = [
-  { value: "DevTools", label: "Developer Tools" },
-  { value: "AI / Builders", label: "AI / Builders" },
-  { value: "AI Agents", label: "AI Agents" },
-  { value: "Marketing", label: "Marketing" },
-  { value: "SEO", label: "SEO" },
-  { value: "Design", label: "Design" },
-  { value: "Other", label: "Other" },
-];
 
 const getFormattedUrlInfo = (rawUrl: string) => {
   let finalUrl = rawUrl.trim();
@@ -51,7 +42,7 @@ const getFormattedUrlInfo = (rawUrl: string) => {
 export default function Hero({ viaName }: { viaName?: string }) {
   const router = useRouter();
   const [url, setUrl] = useState("");
-  const [category, setCategory] = useState("DevTools");
+  const [category, setCategory] = useState<string>(DEFAULT_CATEGORY);
   const [bidAmount, setBidAmount] = useState(DEFAULT_MIN_BID);
   const [lockedMin, setLockedMin] = useState(0);
   const [leaderboardData, setLeaderboardData] = useState<Product[]>([]);
@@ -445,7 +436,7 @@ export default function Hero({ viaName }: { viaName?: string }) {
                 aria-label="Category"
                 className="appearance-none bg-transparent border-b border-foreground/15 focus:border-accent outline-none py-2.5 pr-7 text-base font-medium cursor-pointer transition-colors"
               >
-                {CATEGORIES.map((cat) => (
+                {PRODUCT_CATEGORIES.map((cat) => (
                   <option key={cat.value} value={cat.value}>
                     {cat.label}
                   </option>
