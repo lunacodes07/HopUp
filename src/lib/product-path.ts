@@ -58,10 +58,16 @@ export function withHopupRef(raw?: string | null): string | null {
     if (!next.searchParams.has("ref")) {
       next.searchParams.set("ref", HOPUP_REF);
     }
+    if (!next.searchParams.has("utm_source")) {
+      next.searchParams.set("utm_source", HOPUP_REF);
+    }
+    if (!next.searchParams.has("utm_medium")) {
+      next.searchParams.set("utm_medium", "referral");
+    }
     return next.toString();
   } catch {
     const sep = href.includes("?") ? "&" : "?";
-    return `${href}${sep}ref=${HOPUP_REF}`;
+    return `${href}${sep}ref=${HOPUP_REF}&utm_source=${HOPUP_REF}&utm_medium=referral`;
   }
 }
 
