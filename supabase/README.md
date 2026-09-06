@@ -8,7 +8,8 @@ Five tables. All of them are live. Nothing leftover to drop.
 | `analytics` | One-row visit counter for the hero “total visits” number. | Browser RPC `increment_page_view` |
 | `sponsored_slots` | Four paid spots above the board. Separate from hops. | Production webhook (`applySponsoredPayment`) |
 | `creators` | Referral partners. Added by hand. | You, plus `increment_creator_clicks` |
-| `referral_sales` | One row per attributed hop/sponsored checkout. | Production webhook (`recordReferralSale`) |
+| `referral_sales` | One row per attributed hop/sponsored/Stanley checkout. | Production webhook (`recordReferralSale`) |
+| `stanley_slots` | Twelve permanent spots on Brand My Stanley. One row per claimed slot. | Production webhook (`applyStanleyPayment`) |
 
 RPCs (not tables): `increment_clicks`, `increment_page_view`, `increment_sponsored_clicks`, `increment_creator_clicks`.
 
@@ -17,6 +18,7 @@ RPCs (not tables): `increment_clicks`, `increment_page_view`, `increment_sponsor
 1. `schema.sql` — `products`, `analytics`, click + visit RPCs
 2. `sponsored_slots.sql` — sponsored table + realtime
 3. `creators.sql` — creators + referral_sales (see `CREATORS.md`)
+4. `stanley_slots.sql` — Stanley cup spots + referral kind `stanley`
 
 Do not paste `schema.sql` into a database that already has these tables. It is the original create script, not a migration.
 
