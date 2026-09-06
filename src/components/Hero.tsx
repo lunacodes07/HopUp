@@ -48,7 +48,7 @@ const getFormattedUrlInfo = (rawUrl: string) => {
   return { finalUrl, nameFallback };
 };
 
-export default function Hero() {
+export default function Hero({ viaName }: { viaName?: string }) {
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState("DevTools");
@@ -316,6 +316,11 @@ export default function Hero() {
   return (
     <section className="relative w-full px-4 md:px-8 pt-20 md:pt-24 pb-3 md:pb-4">
       <div className="w-full max-w-[1000px] mx-auto flex flex-col items-center">
+        {viaName && (
+          <p className="mb-3 text-[13px] font-medium text-secondary">
+            <span className="font-semibold text-foreground">{viaName}</span> sent you
+          </p>
+        )}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 mb-4 text-center">
           <LiveStats />
           <span className="hidden sm:inline text-border">·</span>

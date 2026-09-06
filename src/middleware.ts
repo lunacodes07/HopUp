@@ -1,0 +1,48 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import {
+  CREATOR_CLICK_COOKIE,
+  CREATOR_CLICK_HOURS,
+  CREATOR_COOKIE,
+  CREATOR_COOKIE_DAYS,
+  cookieMaxAge,
+  normalizeCreatorSlug,
+} from "@/lib/creators";
+
+function cookieOptions(maxAge: number) {
+  return {
+    path: "/",
+    maxAge,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+  };
+}
+
+export function middleware(request: NextRequest) {
+  const fromQuery = normalizeCreatorSlug(
+    request.nextUrl.searchParams.get("ref") || request.nextUrl.searchParams.get("via")
+  );
+  const fromPath = request.nextUrl.pathname.match(/^\/c\/([a-z0-9-]+)(?:\/|$)/i);
+  const pathSlug = fromPath?.[1] === "stats" ? null : normalizeCreatorSlug(fromPath?.[1]);
+  const slug = fromQuery || pathSlug;
+
+  if (!slug) return NextResponse.next();
+
+  const response = NextResponse.next();
+  response.cookies.set(CREATOR_COOKIE, slug, cookieOptions(cookieMaxAge(CREATOR_COOKIE_DAYS)));
+
+  if (pathSlug && request.cookies.get(CREATOR_CLICK_COOKIE)?.value !== pathSlug) {
+    response.cookies.set(
+      CREATOR_CLICK_COOKIE,
+      pathSlug,
+      cookieOptions(cookieMaxAge(CREATOR_CLICK_HOURS / 24))
+    );
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+};

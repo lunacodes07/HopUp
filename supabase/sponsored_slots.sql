@@ -1,5 +1,5 @@
 -- Sponsored placements: 4 time-boxed spots, independent of the hop leaderboard.
--- Run once in the Supabase SQL Editor.
+-- Run once in the Supabase SQL Editor. Inventory: supabase/README.md.
 
 CREATE TABLE IF NOT EXISTS public.sponsored_slots (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
