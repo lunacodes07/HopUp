@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Webhook } from 'standardwebhooks';
 import { applyHopPayment } from '@/lib/apply-hop-payment';
 import { applySponsoredPayment } from '@/lib/apply-sponsored-payment';
+import { recordReferralSale } from '@/lib/creators-server';
 
 export async function POST(request: Request) {
   try {
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
 
       if (paymentData.metadata?.hopup_kind === 'sponsored') {
         await applySponsoredPayment(paymentData);
+        await recordReferralSale(paymentData);
         return NextResponse.json({ received: true });
       }
 
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
       }
 
       await applyHopPayment(paymentData);
+      await recordReferralSale(paymentData);
     }
 
     return NextResponse.json({ received: true });

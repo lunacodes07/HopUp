@@ -3,7 +3,10 @@ import { dodo } from '@/lib/dodo';
 import { supabaseServer } from '@/lib/supabase-server';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
+import { cookies } from 'next/headers';
 import { minBidForUrl } from '@/lib/bid';
+import { CREATOR_COOKIE } from '@/lib/creators';
+import { getCreatorBySlug } from '@/lib/creators-server';
 import { getSponsorPlan, isValidSlotNumber } from '@/lib/sponsored';
 import { isSlotAvailable } from '@/lib/sponsored-server';
 
@@ -40,6 +43,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing url or category' }, { status: 400 });
     }
 
+    const refSlug = (await cookies()).get(CREATOR_COOKIE)?.value;
+    const creator = await getCreatorBySlug(refSlug);
+
     let amountInCents = 0;
     let metadata: Record<string, string>;
 
@@ -71,6 +77,7 @@ export async function POST(request: Request) {
         hopup_name_fallback: nameFallback || url,
         hopup_slot: String(slotNumber),
         hopup_weeks: String(plan.weeks),
+        ...(creator ? { hopup_ref: creator.slug } : {}),
       };
     } else {
       if (!bidAmount) {
@@ -101,6 +108,7 @@ export async function POST(request: Request) {
         hopup_category: category,
         hopup_name_fallback: nameFallback || url,
         hopup_product_id: existingProduct?.id || 'new',
+        ...(creator ? { hopup_ref: creator.slug } : {}),
       };
     }
 
