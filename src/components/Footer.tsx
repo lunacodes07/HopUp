@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TinyshelfBadge } from "./TinyshelfBadge";
 
 export default function Footer() {
   return (
@@ -35,7 +36,7 @@ export default function Footer() {
         <span className="text-xs text-secondary/60">© 2026</span>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
         <a
           href="https://www.producthunt.com/products/hopup?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-hopup"
           target="_blank"
@@ -46,10 +47,11 @@ export default function Footer() {
             alt="HopUp - Your Product Deserves a Better Spot | Product Hunt"
             width={180}
             height={39}
-            className="h-[39px] w-[180px]"
+            className="h-8 w-auto"
             src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1238456&theme=light&t=1788265340921"
           />
         </a>
+        <TinyshelfBadge />
         <a
           href="https://frogdr.com/hopup.lol?utm_source=hopup.lol"
           target="_blank"
@@ -60,7 +62,7 @@ export default function Footer() {
             alt="Monitor your Domain Rating with FrogDR"
             width={250}
             height={54}
-            className="h-[39px] w-auto"
+            className="h-11 w-auto"
             src="https://frogdr.com/hopup.lol/badge-white.svg?badge=1&round=1"
           />
         </a>
