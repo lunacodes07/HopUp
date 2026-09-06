@@ -50,7 +50,17 @@ export async function confirmLocalStanleyPayment(opts: {
   }
 
   const result = await applyStanleyPayment(match);
-  await recordReferralSale(match);
+  const metadata = Object.fromEntries(
+    Object.entries(match.metadata ?? {}).map(([key, value]) => [
+      key,
+      value == null ? undefined : String(value),
+    ])
+  );
+  await recordReferralSale({
+    id: "id" in match ? String(match.id ?? "") : undefined,
+    payment_id: "payment_id" in match ? String(match.payment_id ?? "") : undefined,
+    metadata,
+  });
   return {
     applied: Boolean(result.slotNumber),
     duplicate: result.duplicate,
