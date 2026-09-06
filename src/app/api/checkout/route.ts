@@ -5,6 +5,7 @@ import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
 import { cookies } from 'next/headers';
 import { minBidForUrl } from '@/lib/bid';
+import { isProductCategory } from '@/lib/categories';
 import { CREATOR_COOKIE } from '@/lib/creators';
 import { getCreatorBySlug } from '@/lib/creators-server';
 import { getSponsorPlan, isValidSlotNumber } from '@/lib/sponsored';
@@ -41,6 +42,10 @@ export async function POST(request: Request) {
 
     if (!url || !category) {
       return NextResponse.json({ error: 'Missing url or category' }, { status: 400 });
+    }
+
+    if (!isProductCategory(category)) {
+      return NextResponse.json({ error: 'Choose a valid category' }, { status: 400 });
     }
 
     const refSlug = (await cookies()).get(CREATOR_COOKIE)?.value;
