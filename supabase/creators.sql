@@ -1,5 +1,5 @@
 -- Creator referrals. Add people by hand. Run this in the Supabase SQL editor.
--- Operator guide: supabase/CREATORS.md
+-- Inventory: supabase/README.md. Operator guide: supabase/CREATORS.md.
 
 CREATE TABLE IF NOT EXISTS public.creators (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
