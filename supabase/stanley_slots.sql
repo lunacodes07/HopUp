@@ -1,4 +1,4 @@
--- Brand My Stanley: 12 permanent paid spots on the cup.
+-- Brand My Stanley: 12 paid spots on the cup. Hops replace the occupant.
 -- Run once in the Supabase SQL Editor. Inventory: supabase/README.md.
 
 CREATE TABLE IF NOT EXISTS public.stanley_slots (

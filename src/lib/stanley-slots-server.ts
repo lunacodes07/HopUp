@@ -11,14 +11,19 @@ export async function getStanleySlots(): Promise<StanleySlot[]> {
   return (data ?? []) as StanleySlot[];
 }
 
-export async function isStanleySlotAvailable(slotNumber: number): Promise<boolean> {
-  if (!isValidStanleySlot(slotNumber)) return false;
+export async function getStanleySlot(slotNumber: number): Promise<StanleySlot | null> {
+  if (!isValidStanleySlot(slotNumber)) return null;
   const { data, error } = await supabaseServer
     .from("stanley_slots")
-    .select("id")
+    .select("id, slot_number, name, url, price, created_at")
     .eq("slot_number", slotNumber)
     .limit(1);
 
   if (error) throw error;
-  return !data || data.length === 0;
+  return (data?.[0] as StanleySlot) ?? null;
+}
+
+export async function isStanleySlotAvailable(slotNumber: number): Promise<boolean> {
+  const row = await getStanleySlot(slotNumber);
+  return !row;
 }

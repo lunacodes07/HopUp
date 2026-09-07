@@ -1,6 +1,5 @@
 export const CREATOR_COOKIE = "hopup_ref";
 export const CREATOR_CLICK_COOKIE = "hopup_clk";
-export const CREATOR_COOKIE_DAYS = 30;
 export const CREATOR_CLICK_HOURS = 12;
 export const CREATOR_COMMISSION = 0.25;
 export const CREATOR_PAYOUT_MIN = 25;

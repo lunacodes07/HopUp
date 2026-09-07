@@ -1,6 +1,6 @@
 import { supabaseServer } from "@/lib/supabase-server";
 import { fetchMetadata } from "@/lib/metadata";
-import { isValidStanleySlot, stanleySlotPrice } from "@/lib/stanley-slots";
+import { isValidStanleySlot, stanleyNextSlotPrice } from "@/lib/stanley-slots";
 
 export async function applyStanleyPayment(paymentData: any) {
   const url = paymentData.metadata?.hopup_url;
@@ -10,7 +10,7 @@ export async function applyStanleyPayment(paymentData: any) {
   const paymentId = String(paymentData.payment_id || paymentData.id || "");
   const table = "stanley_slots";
 
-  if (!url || !isValidStanleySlot(slotNumber) || bidAmount !== stanleySlotPrice(slotNumber)) {
+  if (!url || !isValidStanleySlot(slotNumber)) {
     console.error("Invalid Stanley payment metadata", paymentData.metadata);
     throw new Error("Invalid Stanley payment metadata");
   }
@@ -27,41 +27,75 @@ export async function applyStanleyPayment(paymentData: any) {
     }
   }
 
-  const { data: taken } = await supabaseServer
+  const { data: existingRows } = await supabaseServer
     .from(table)
-    .select("id")
+    .select("id, price")
     .eq("slot_number", slotNumber)
     .limit(1);
 
-  if (taken && taken.length > 0) {
-    console.error(
-      `Stanley payment ${paymentId} for ${url}: slot ${slotNumber} already claimed. Skipping insert.`
-    );
-    return { slotNumber: null, duplicate: false, table, skipped: "slot_taken" };
+  const current = existingRows?.[0] ?? null;
+  const expected = stanleyNextSlotPrice(slotNumber, current?.price);
+  if (bidAmount !== expected) {
+    console.error("Invalid Stanley payment metadata", paymentData.metadata, {
+      currentPrice: current?.price ?? null,
+      expected,
+    });
+    throw new Error("Invalid Stanley payment metadata");
   }
 
   const { title: fetchedTitle } = await fetchMetadata(url);
-
-  const { error } = await supabaseServer.from(table).insert({
+  const payload = {
     slot_number: slotNumber,
     name: fetchedTitle || nameFallback || url,
     url,
     price: bidAmount,
     payment_id: paymentId || null,
-  });
+  };
+
+  if (!current) {
+    const { error } = await supabaseServer.from(table).insert(payload);
+
+    if (error && error.code === "23505" && /payment_id/i.test(error.message || "")) {
+      return { slotNumber: null, duplicate: true, table };
+    }
+
+    if (error && error.code === "23505") {
+      console.error(
+        `Stanley payment ${paymentId} for ${url}: slot ${slotNumber} lost the race. Skipping insert.`
+      );
+      return { slotNumber: null, duplicate: false, table, skipped: "slot_taken" };
+    }
+
+    if (error) throw error;
+    console.log(`Filled ${table} slot ${slotNumber} for ${url} ($${bidAmount})`);
+    return { slotNumber, duplicate: false, table };
+  }
+
+  const { data: updated, error } = await supabaseServer
+    .from(table)
+    .update({
+      name: payload.name,
+      url: payload.url,
+      price: payload.price,
+      payment_id: payload.payment_id,
+    })
+    .eq("slot_number", slotNumber)
+    .eq("price", current.price)
+    .select("id");
 
   if (error && error.code === "23505" && /payment_id/i.test(error.message || "")) {
     return { slotNumber: null, duplicate: true, table };
   }
 
-  if (error && error.code === "23505") {
+  if (error) throw error;
+
+  if (!updated || updated.length === 0) {
     console.error(
-      `Stanley payment ${paymentId} for ${url}: slot ${slotNumber} lost the race. Skipping insert.`
+      `Stanley payment ${paymentId} for ${url}: slot ${slotNumber} was hopped first. Skipping update.`
     );
-    return { slotNumber: null, duplicate: false, table, skipped: "slot_taken" };
+    return { slotNumber: null, duplicate: false, table, skipped: "stale_hop" };
   }
 
-  if (error) throw error;
-  console.log(`Filled ${table} slot ${slotNumber} for ${url} ($${bidAmount})`);
-  return { slotNumber, duplicate: false, table };
+  console.log(`Hopped ${table} slot ${slotNumber} for ${url} ($${bidAmount})`);
+  return { slotNumber, duplicate: false, table, hopped: true };
 }

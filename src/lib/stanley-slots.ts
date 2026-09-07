@@ -1,4 +1,4 @@
-import { STANLEY_SLOT_COUNT, slotPrice } from "@/lib/brand-objects";
+import { STANLEY_SLOT_COUNT, nextSlotPrice, slotHopAmount, slotPrice } from "@/lib/brand-objects";
 
 export type StanleySlot = {
   id: string;
@@ -16,4 +16,12 @@ export function isValidStanleySlot(slot: unknown): slot is number {
 
 export function stanleySlotPrice(slotNumber: number): number {
   return slotPrice(slotNumber);
+}
+
+export function stanleyHopAmount(slotNumber: number): number {
+  return slotHopAmount(slotNumber);
+}
+
+export function stanleyNextSlotPrice(slotNumber: number, currentPrice?: number | null): number {
+  return nextSlotPrice(slotNumber, currentPrice);
 }

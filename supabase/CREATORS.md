@@ -2,7 +2,7 @@
 
 You add people by hand in the Supabase SQL editor. There is no signup and no login.
 
-Deal: **25%** of hops and sponsored checkouts that came through their link. **30-day cookie**, last click wins. Pay monthly over **$25** (PayPal / Wise / UPI — whatever you already use).
+Deal: **25%** of hops, sponsored, and Stanley checkouts that happen after someone clicks their link. **One sale per click** — no 30-day cookie. Pay monthly over **$25** (PayPal / Wise / UPI — whatever you already use).
 
 First-time setup: run `creators.sql` once.
 
@@ -16,7 +16,7 @@ VALUES ('maya', 'Maya', encode(gen_random_bytes(16), 'hex'));
 ```
 
 - `slug` is the link: lowercase letters, numbers, hyphens. Do not use `hopup`, `stats`, `admin`, or `c`.
-- `name` is what visitors see (“Maya sent you”).
+- `name` is the label on their stats page. Visitors see the normal homepage.
 - `stats_key` is generated. Do not invent one.
 
 Then pull the two URLs:
@@ -132,6 +132,6 @@ Their dashboard unpaid figure drops after that. There is no auto-payout.
 
 - A sale only records after a **production** Dodo webhook. Local checkouts do not write hops or referral sales.
 - Clicks increment when someone opens `/c/slug` (about once per browser per 12 hours).
-- `?ref=maya` on the homepage also attributes the cookie, but the share link should stay `/c/maya`.
+- `?ref=maya` on the homepage also attributes that visit. Share link should stay `/c/maya`. Attribution is this visit only and clears after one checkout.
 - To rename the public label: `UPDATE creators SET name = 'Maya K' WHERE slug = 'maya';`
 - Slug changes break their old link. Add a new row instead.

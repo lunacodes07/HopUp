@@ -16,8 +16,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const creator = await getCreatorBySlug((await params).slug);
   if (!creator) return { title: "HopUp" };
   return {
-    title: `${creator.name} sent you — HopUp`,
-    description: "Pay once. Rank higher.",
+    title: "HopUp — Your Product Deserves a Better Spot",
+    description: "List it. Hop up. Get noticed.",
     robots: { index: false, follow: true },
   };
 }
@@ -36,5 +36,5 @@ export default async function CreatorPage({ params }: PageProps) {
   }
 
   const products = await getRankedProducts();
-  return <HomeView page={1} products={products} viaName={creator.name} />;
+  return <HomeView page={1} products={products} />;
 }

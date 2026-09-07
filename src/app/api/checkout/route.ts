@@ -10,8 +10,8 @@ import { CREATOR_COOKIE } from '@/lib/creators';
 import { getCreatorBySlug } from '@/lib/creators-server';
 import { getSponsorPlan, isValidSlotNumber } from '@/lib/sponsored';
 import { isSlotAvailable } from '@/lib/sponsored-server';
-import { isValidStanleySlot, stanleySlotPrice } from '@/lib/stanley-slots';
-import { isStanleySlotAvailable } from '@/lib/stanley-slots-server';
+import { isValidStanleySlot, stanleyNextSlotPrice } from '@/lib/stanley-slots';
+import { getStanleySlot } from '@/lib/stanley-slots-server';
 import { getFormattedUrlInfo } from '@/lib/format-url';
 
 // Safely initialize Upstash Ratelimit only if the environment variables exist
@@ -43,8 +43,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { url, bidAmount, category, nameFallback, kind, slotNumber, weeks } = body;
 
-    const refSlug = (await cookies()).get(CREATOR_COOKIE)?.value;
+    const cookieStore = await cookies();
+    const refSlug = cookieStore.get(CREATOR_COOKIE)?.value;
     const creator = await getCreatorBySlug(refSlug);
+    if (creator) cookieStore.delete(CREATOR_COOKIE);
 
     let amountInCents = 0;
     let metadata: Record<string, string>;
@@ -59,17 +61,17 @@ export async function POST(request: Request) {
       }
 
       const { finalUrl, nameFallback: fromUrl } = getFormattedUrlInfo(url);
-      const price = stanleySlotPrice(slotNumber);
+      let currentPrice: number | null = null;
 
       try {
-        const open = await isStanleySlotAvailable(slotNumber);
-        if (!open) {
-          return NextResponse.json({ error: 'That spot is already taken. Pick another.' }, { status: 409 });
-        }
+        const current = await getStanleySlot(slotNumber);
+        currentPrice = current?.price ?? null;
       } catch (err: any) {
-        console.error('Stanley slot availability check failed:', err);
+        console.error('Stanley slot lookup failed:', err);
         return NextResponse.json({ error: 'Stanley spots are not available yet' }, { status: 503 });
       }
+
+      const price = stanleyNextSlotPrice(slotNumber, currentPrice);
 
       amountInCents = price * 100;
       returnHop = finalUrl;

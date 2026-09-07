@@ -9,7 +9,7 @@ Five tables. All of them are live. Nothing leftover to drop.
 | `sponsored_slots` | Four paid spots above the board. Separate from hops. | Production webhook (`applySponsoredPayment`) |
 | `creators` | Referral partners. Added by hand. | You, plus `increment_creator_clicks` |
 | `referral_sales` | One row per attributed hop/sponsored/Stanley checkout. | Production webhook (`recordReferralSale`) |
-| `stanley_slots` | Twelve permanent spots on Brand My Stanley. One row per claimed slot. | Production webhook (`applyStanleyPayment`) |
+| `stanley_slots` | Twelve spots on Brand My Stanley. One row per slot; hops replace the occupant and raise the bid. | Production webhook (`applyStanleyPayment`) |
 
 RPCs (not tables): `increment_clicks`, `increment_page_view`, `increment_sponsored_clicks`, `increment_creator_clicks`.
 
