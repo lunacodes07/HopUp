@@ -10,18 +10,18 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Brand My Stanley — HopUp",
-  description: "See your brand on my Stanley — your brand travels with me. 6 big spots at $35, 6 small at $20.",
+  description: "See your brand on my Stanley. 6 big spots from $35 (hop +$15), 6 small from $20 (hop +$10).",
   alternates: { canonical: `${SITE_URL}/brandmystanley` },
   openGraph: {
     title: "Brand My Stanley — HopUp",
-    description: "See your brand on my Stanley — your brand travels with me. 6 big spots at $35, 6 small at $20.",
+    description: "See your brand on my Stanley. 6 big spots from $35 (hop +$15), 6 small from $20 (hop +$10).",
     url: `${SITE_URL}/brandmystanley`,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "Brand My Stanley — HopUp",
-    description: "See your brand on my Stanley — your brand travels with me.",
+    description: "See your brand on my Stanley. Hop any taken spot.",
   },
 };
 

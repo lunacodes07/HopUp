@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { RotateCcw } from "lucide-react";
 import CustomizerControls from "./CustomizerControls";
-import { STANLEY_SLOT_COUNT, slotPrice, stanleyCapacity } from "@/lib/brand-objects";
+import { STANLEY_SLOT_COUNT } from "@/lib/brand-objects";
 import { getFormattedUrlInfo } from "@/lib/format-url";
 import { getProxiedLogoUrl } from "@/lib/logo";
 import { supabase } from "@/lib/supabase";
@@ -211,24 +211,19 @@ export default function StanleyExperience({
     };
   }, [brandUrl]);
 
-  const selectSlot = useCallback(
-    (n: number) => {
-      setSelectedSlot(n);
-      setClaimError(null);
-      if (claimedBySlot[n]) return;
-      requestAnimationFrame(() => {
-        document.getElementById("claim-spot")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
+  const selectSlot = useCallback((n: number) => {
+    setSelectedSlot(n);
+    setClaimError(null);
+    requestAnimationFrame(() => {
+      document.getElementById("claim-spot")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
       });
-    },
-    [claimedBySlot]
-  );
+    });
+  }, []);
 
   const handleUpload = useCallback(
     async (file: File) => {
-      if (claimedBySlot[selectedSlot]) return;
       setUploadError(null);
       try {
         const dataUrl = await fitLogoToSquare(file);
@@ -237,7 +232,7 @@ export default function StanleyExperience({
         setUploadError("Could not read that image. Try a PNG or JPG.");
       }
     },
-    [claimedBySlot, selectedSlot]
+    [selectedSlot]
   );
 
   const clearSlot = useCallback(() => {
@@ -256,16 +251,16 @@ export default function StanleyExperience({
     return next;
   }, [claimedBySlot]);
 
+  const previewLogo = slotLogos[selectedSlot] || fetchedLogo;
+
   const displayLogos = useMemo(() => {
     const next = { ...claimedLogos };
-    if (claimedBySlot[selectedSlot]) return next;
-    const preview = slotLogos[selectedSlot] || fetchedLogo;
-    if (preview) next[selectedSlot] = preview;
+    if (previewLogo) next[selectedSlot] = previewLogo;
     return next;
-  }, [claimedLogos, claimedBySlot, fetchedLogo, selectedSlot, slotLogos]);
+  }, [claimedLogos, previewLogo, selectedSlot]);
 
   const handleClaim = useCallback(async () => {
-    if (claiming || claimedBySlot[selectedSlot]) return;
+    if (claiming) return;
     const trimmed = brandUrl.trim();
     if (trimmed.length < 3) {
       setClaimError("Add your site or @handle first.");
@@ -296,15 +291,12 @@ export default function StanleyExperience({
       setClaimError(err instanceof Error ? err.message : "Failed to start checkout.");
       setClaiming(false);
     }
-  }, [brandUrl, claiming, claimedBySlot, selectedSlot]);
+  }, [brandUrl, claiming, selectedSlot]);
 
   const traveler = displayBrandOf(brandUrl);
-  const filledSlots = Object.keys(claimedBySlot).map(Number);
-  const filledCount = filledSlots.length;
+  const filledCount = Object.keys(claimedBySlot).length;
   const raised = Object.values(claimedBySlot).reduce((sum, row) => sum + row.price, 0);
   const hoveredClaimed = hoveredSlot != null ? claimedBySlot[hoveredSlot] : undefined;
-  const capacity = stanleyCapacity(SLOT_COUNT);
-  const raisedPct = capacity > 0 ? Math.min(100, (raised / capacity) * 100) : 0;
 
   return (
     <main className="w-full px-4 md:px-8 pt-24 md:pt-28 pb-20">
@@ -338,7 +330,7 @@ export default function StanleyExperience({
             transition={{ duration: 0.55, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
             className="mt-2.5 text-[15px] md:text-lg text-secondary max-w-[440px] mx-auto md:mx-0 text-balance"
           >
-            See your brand on my Stanley — your brand travels with me.
+            See your brand on my Stanley — hop any spot that is already taken.
           </motion.p>
         </div>
 
@@ -353,12 +345,12 @@ export default function StanleyExperience({
             <span className="text-[28px] md:text-[34px] font-semibold tracking-tight tabular-nums text-foreground leading-none">
               ${raised}
             </span>
-            <span className="text-[15px] md:text-base font-medium text-secondary tabular-nums">
-              of ${capacity}
+            <span className="text-[15px] md:text-base font-medium text-secondary">
+              raised on this Stanley
             </span>
           </div>
           <p className="mt-1.5 text-[12px] text-secondary text-center md:text-left">
-            this Stanley can take
+            hop any taken spot
             {filledCount > 0 && (
               <span className="tabular-nums">
                 {" "}
@@ -370,13 +362,13 @@ export default function StanleyExperience({
             className="mt-3 h-1.5 w-full max-w-[320px] mx-auto md:mx-0 rounded-full bg-border/70 overflow-hidden"
             role="progressbar"
             aria-valuemin={0}
-            aria-valuemax={capacity}
-            aria-valuenow={raised}
-            aria-label="Stanley earnings"
+            aria-valuemax={SLOT_COUNT}
+            aria-valuenow={filledCount}
+            aria-label="Stanley spots filled"
           >
             <div
               className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out"
-              style={{ width: `${raisedPct}%` }}
+              style={{ width: `${(filledCount / SLOT_COUNT) * 100}%` }}
             />
           </div>
         </motion.div>
@@ -400,6 +392,9 @@ export default function StanleyExperience({
             <div className="h-[420px] sm:h-[480px] lg:h-[560px]">
               <TumblerViewer
                 slotLogos={displayLogos}
+                claimedUrls={Object.fromEntries(
+                  Object.values(claimedBySlot).map((row) => [row.slot_number, row.url])
+                )}
                 selectedSlot={selectedSlot}
                 onSelectSlot={selectSlot}
                 onHoverSlot={setHoveredSlot}
@@ -415,9 +410,9 @@ export default function StanleyExperience({
               <span className="rounded-full bg-white/80 backdrop-blur px-3.5 py-1.5 text-[12px] font-medium text-secondary border border-border/60 truncate max-w-full">
                 {hoveredClaimed ? (
                   <>
-                    <span className="font-semibold text-foreground">{hoveredClaimed.name}</span>
+                    <span className="font-semibold text-foreground">Claim this</span>
                     {" · "}
-                    {hoveredClaimed.url.replace(/^https?:\/\//, "")}
+                    ${hoveredClaimed.price}
                   </>
                 ) : traveler ? (
                   <>
@@ -446,6 +441,7 @@ export default function StanleyExperience({
               onSelectSlot={selectSlot}
               slotLogos={displayLogos}
               claimedBySlot={claimedBySlot}
+              previewLogo={previewLogo}
               uploaded={Boolean(slotLogos[selectedSlot])}
               onUploadLogo={handleUpload}
               onClearSlot={clearSlot}

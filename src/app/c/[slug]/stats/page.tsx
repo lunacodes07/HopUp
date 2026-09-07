@@ -83,7 +83,7 @@ export default async function CreatorStatsPage({ params, searchParams }: PagePro
             {creator.name}
           </h1>
           <p className="mt-1 text-sm md:text-base text-secondary">
-            25% of hops and sponsored checkouts from your link. Paid monthly over ${CREATOR_PAYOUT_MIN}.
+            25% when someone clicks your link and checks out that visit. Paid monthly over ${CREATOR_PAYOUT_MIN}.
           </p>
 
           <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-2.5">

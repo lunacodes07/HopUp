@@ -13,20 +13,18 @@ type HomeViewProps = {
   page?: number;
   boardMode?: BoardMode;
   products?: Product[];
-  viaName?: string;
 };
 
 export default function HomeView({
   page = 1,
   boardMode = "alltime",
   products = [],
-  viaName,
 }: HomeViewProps) {
   return (
     <>
       <Navbar />
       <main className="flex flex-col flex-1 w-full relative">
-        <Hero viaName={viaName} />
+        <Hero />
         <LiveLeaderboard page={page} boardMode={boardMode} initialProducts={products} />
         <WhyFounders />
         <Pricing />

@@ -4,15 +4,14 @@ import {
   CREATOR_CLICK_COOKIE,
   CREATOR_CLICK_HOURS,
   CREATOR_COOKIE,
-  CREATOR_COOKIE_DAYS,
   cookieMaxAge,
   normalizeCreatorSlug,
 } from "@/lib/creators";
 
-function cookieOptions(maxAge: number) {
+function cookieOptions(maxAge?: number) {
   return {
     path: "/",
-    maxAge,
+    ...(typeof maxAge === "number" ? { maxAge } : {}),
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,
@@ -30,7 +29,8 @@ export function middleware(request: NextRequest) {
   if (!slug) return NextResponse.next();
 
   const response = NextResponse.next();
-  response.cookies.set(CREATOR_COOKIE, slug, cookieOptions(cookieMaxAge(CREATOR_COOKIE_DAYS)));
+  // Session only — a later visit without the creator link does not pay them.
+  response.cookies.set(CREATOR_COOKIE, slug, cookieOptions());
 
   if (pathSlug && request.cookies.get(CREATOR_CLICK_COOKIE)?.value !== pathSlug) {
     response.cookies.set(

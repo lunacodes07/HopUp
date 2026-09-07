@@ -14,12 +14,25 @@ export type BrandObject = {
 
 export const SLOT_PRICE = 35; // large slots (upper ring)
 export const SMALL_SLOT_PRICE = 20; // small slots (base ring)
+export const LARGE_HOP_AMOUNT = 15;
+export const SMALL_HOP_AMOUNT = 10;
 export const LARGE_SLOT_COUNT = 6;
 export const STANLEY_SLOT_COUNT = 12;
 
 /** Slots 1-6 are the large upper ring, 7+ are the small base ring. */
 export function slotPrice(slotNumber: number): number {
   return slotNumber <= LARGE_SLOT_COUNT ? SLOT_PRICE : SMALL_SLOT_PRICE;
+}
+
+/** Extra dollars to hop over whoever is already on this spot. */
+export function slotHopAmount(slotNumber: number): number {
+  return slotNumber <= LARGE_SLOT_COUNT ? LARGE_HOP_AMOUNT : SMALL_HOP_AMOUNT;
+}
+
+/** Opening list price, or current bid + hop increment. */
+export function nextSlotPrice(slotNumber: number, currentPrice?: number | null): number {
+  if (typeof currentPrice !== "number" || currentPrice <= 0) return slotPrice(slotNumber);
+  return currentPrice + slotHopAmount(slotNumber);
 }
 
 /** Max this Stanley can take if every spot is claimed. */

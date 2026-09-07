@@ -6,6 +6,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import {
   ContactShadows,
   Environment,
+  Html,
   Lightformer,
   OrbitControls,
   RoundedBox,
@@ -153,7 +154,18 @@ function makeSelectionRingTexture(): THREE.CanvasTexture {
 /* Scene pieces                                                        */
 /* ------------------------------------------------------------------ */
 
-function makeLogoStickerTexture(img: HTMLImageElement): THREE.CanvasTexture {
+function paintClaimThis(ctx: CanvasRenderingContext2D, size: number) {
+  ctx.fillStyle = "rgba(255,255,255,0.38)";
+  roundedRectPath(ctx, 10, 10, size - 20, size - 20, 56);
+  ctx.fill();
+  ctx.fillStyle = "#2D2926";
+  ctx.font = "700 54px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("Claim this", size / 2, size / 2);
+}
+
+function makeLogoStickerTexture(img: HTMLImageElement, variant: "normal" | "claim" = "normal"): THREE.CanvasTexture {
   const size = 512;
   const pad = 40;
   const canvas = document.createElement("canvas");
@@ -170,7 +182,10 @@ function makeLogoStickerTexture(img: HTMLImageElement): THREE.CanvasTexture {
   const scale = Math.min((size - pad * 2) / srcW, (size - pad * 2) / srcH);
   const w = srcW * scale;
   const h = srcH * scale;
+  if (variant === "claim") ctx.filter = "blur(16px)";
   ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+  ctx.filter = "none";
+  if (variant === "claim") paintClaimThis(ctx, size);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -180,11 +195,14 @@ function makeLogoStickerTexture(img: HTMLImageElement): THREE.CanvasTexture {
 }
 
 function useSlotLogoTexture(logoUrl: string | null) {
-  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
+  const [textures, setTextures] = useState<{
+    normal: THREE.CanvasTexture | null;
+    claim: THREE.CanvasTexture | null;
+  }>({ normal: null, claim: null });
 
   useEffect(() => {
     if (!logoUrl) {
-      setTexture(null);
+      setTextures({ normal: null, claim: null });
       return;
     }
 
@@ -194,10 +212,13 @@ function useSlotLogoTexture(logoUrl: string | null) {
 
     img.onload = () => {
       if (cancelled) return;
-      setTexture(makeLogoStickerTexture(img));
+      setTextures({
+        normal: makeLogoStickerTexture(img, "normal"),
+        claim: makeLogoStickerTexture(img, "claim"),
+      });
     };
     img.onerror = () => {
-      if (!cancelled) setTexture(null);
+      if (!cancelled) setTextures({ normal: null, claim: null });
     };
     img.src = logoUrl;
 
@@ -208,30 +229,62 @@ function useSlotLogoTexture(logoUrl: string | null) {
 
   useEffect(() => {
     return () => {
-      texture?.dispose();
+      textures.normal?.dispose();
+      textures.claim?.dispose();
     };
-  }, [texture]);
+  }, [textures]);
 
-  return texture;
+  return textures;
+}
+
+function slotHref(url: string) {
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("@")) return `https://x.com/${url.slice(1)}`;
+  return `https://${url}`;
+}
+
+function slotHost(url: string) {
+  return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
 function SlotPatch({
   spec,
   logoUrl,
   selected,
+  claimedUrl,
   onSelect,
   onHover,
 }: {
   spec: SlotSpec;
   logoUrl: string | null;
   selected: boolean;
+  claimedUrl?: string | null;
   onSelect: (n: number) => void;
   onHover?: (n: number | null) => void;
 }) {
-  const logoTexture = useSlotLogoTexture(logoUrl);
+  const [hovered, setHovered] = useState(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const claimed = Boolean(claimedUrl);
+  const { normal: logoTexture, claim: claimTexture } = useSlotLogoTexture(logoUrl);
+  const showClaim = claimed && hovered;
+  const activeLogo = showClaim ? claimTexture ?? logoTexture : logoTexture;
+
+  const keepHover = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    setHovered(true);
+    onHover?.(spec.n);
+  };
+
+  const leaveHover = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => {
+      setHovered(false);
+      onHover?.(null);
+    }, 160);
+  };
   const emptyTexture = useMemo(
-    () => (logoTexture ? null : makeEmptySlotTexture(spec.n, selected, slotPrice(spec.n))),
-    [logoTexture, selected, spec.n]
+    () => (activeLogo ? null : makeEmptySlotTexture(spec.n, selected, slotPrice(spec.n))),
+    [activeLogo, selected, spec.n]
   );
 
   useEffect(() => {
@@ -239,6 +292,12 @@ function SlotPatch({
       emptyTexture?.dispose();
     };
   }, [emptyTexture]);
+
+  useEffect(() => {
+    return () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
+  }, []);
 
   const width = spec.thetaWidth * spec.radius;
   const pointer = {
@@ -248,11 +307,11 @@ function SlotPatch({
     },
     onPointerOver: () => {
       document.body.style.cursor = "pointer";
-      onHover?.(spec.n);
+      keepHover();
     },
     onPointerOut: () => {
       document.body.style.cursor = "auto";
-      onHover?.(null);
+      leaveHover();
     },
   };
 
@@ -267,9 +326,9 @@ function SlotPatch({
       {...pointer}
     >
       <planeGeometry args={[width, spec.height]} />
-      {logoTexture ? (
+      {activeLogo ? (
         <meshBasicMaterial
-          map={logoTexture}
+          map={activeLogo}
           transparent
           toneMapped={false}
           depthWrite={false}
@@ -283,6 +342,28 @@ function SlotPatch({
           metalness={0.05}
           side={THREE.DoubleSide}
         />
+      )}
+      {showClaim && claimedUrl && (
+        <Html
+          position={[0, spec.height / 2 + 0.12, 0.02]}
+          center
+          occlude={false}
+          zIndexRange={[30, 0]}
+          style={{ pointerEvents: "auto" }}
+        >
+          <a
+            href={slotHref(claimedUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onPointerEnter={keepHover}
+            onPointerLeave={leaveHover}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            className="block max-w-[160px] truncate rounded-full border border-[#E8E4DC] bg-white px-2.5 py-0.5 text-[10px] font-medium text-[#2D2926] shadow-[0_6px_16px_-10px_rgba(45,41,38,0.45)] hover:text-[#8C2D55]"
+          >
+            {slotHost(claimedUrl)}
+          </a>
+        </Html>
       )}
     </mesh>
   );
@@ -461,6 +542,7 @@ function Turntable({
 export type TumblerViewerProps = {
   /** slot number -> square-fit logo data URL or proxied logo */
   slotLogos: Record<number, string>;
+  claimedUrls?: Record<number, string>;
   selectedSlot: number;
   onSelectSlot: (n: number) => void;
   onHoverSlot?: (n: number | null) => void;
@@ -468,6 +550,7 @@ export type TumblerViewerProps = {
 
 export default function TumblerViewer({
   slotLogos,
+  claimedUrls = {},
   selectedSlot,
   onSelectSlot,
   onHoverSlot,
@@ -515,6 +598,7 @@ export default function TumblerViewer({
             spec={spec}
             logoUrl={slotLogos[spec.n] ?? null}
             selected={selectedSlot === spec.n}
+            claimedUrl={claimedUrls[spec.n]}
             onSelect={onSelectSlot}
             onHover={onHoverSlot}
           />
