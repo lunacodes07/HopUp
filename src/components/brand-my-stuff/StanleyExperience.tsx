@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { RotateCcw } from "lucide-react";
+import LiveStats from "@/components/LiveStats";
 import CustomizerControls from "./CustomizerControls";
 import { STANLEY_SLOT_COUNT } from "@/lib/brand-objects";
 import { getFormattedUrlInfo } from "@/lib/format-url";
@@ -299,8 +300,12 @@ export default function StanleyExperience({
   const hoveredClaimed = hoveredSlot != null ? claimedBySlot[hoveredSlot] : undefined;
 
   return (
-    <main className="w-full px-4 md:px-8 pt-24 md:pt-28 pb-20">
+    <main className="w-full px-4 md:px-8 pt-20 md:pt-24 pb-20">
       <div className="w-full max-w-[1080px] mx-auto">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 mb-4 text-center">
+          <LiveStats />
+        </div>
+
         {/* Breadcrumb */}
         <p className="text-[11px] font-medium text-secondary mb-6">
           <Link href="/" className="hover:text-foreground transition-colors">

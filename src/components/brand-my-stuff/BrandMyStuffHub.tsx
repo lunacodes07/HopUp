@@ -3,13 +3,18 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import LiveStats from "@/components/LiveStats";
 import { BRAND_OBJECTS } from "@/lib/brand-objects";
 import ObjectCard from "./ObjectCard";
 
 export default function BrandMyStuffHub() {
   return (
-    <main className="w-full px-4 md:px-8 pt-28 md:pt-36 pb-20 overflow-hidden">
+    <main className="w-full px-4 md:px-8 pt-20 md:pt-24 pb-20 overflow-hidden">
       <div className="w-full max-w-[1000px] mx-auto">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 mb-4 text-center">
+          <LiveStats />
+        </div>
+
         {/* Hero */}
         <div className="relative text-center">
           <div
