@@ -143,6 +143,46 @@ async function iconsFromPage(pageUrl: string): Promise<string[]> {
   }
 }
 
+function appleAppId(pageUrl: string): string | null {
+  try {
+    const path = new URL(pageUrl.startsWith("http") ? pageUrl : `https://${pageUrl}`).pathname;
+    const match = path.match(/\/id(\d+)/i);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function itunesArtwork(id: string): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_MS);
+    const res = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(id)}`, {
+      signal: controller.signal,
+      headers: { "User-Agent": BROWSER_UA, Accept: "application/json" },
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      results?: Array<{ artworkUrl512?: string; artworkUrl100?: string }>;
+    };
+    const art = data.results?.[0]?.artworkUrl512 || data.results?.[0]?.artworkUrl100;
+    return typeof art === "string" && /^https?:\/\//i.test(art) ? art : null;
+  } catch {
+    return null;
+  }
+}
+
+async function storeArtworkUrls(host: string, pageUrl: string): Promise<string[]> {
+  if (host === "apps.apple.com" || host === "itunes.apple.com") {
+    const id = appleAppId(pageUrl);
+    if (!id) return [];
+    const art = await itunesArtwork(id);
+    return art ? [art] : [];
+  }
+  return [];
+}
+
 function serviceCandidates(host: string, pageUrl: string): string[] {
   const out: string[] = [];
   if (host === "x.com" || host === "twitter.com") {
@@ -175,6 +215,13 @@ export async function resolveLogo(raw: string): Promise<LogoImage | null> {
     if (!fallback) fallback = image;
     return null;
   };
+
+  for (const src of await storeArtworkUrls(host, pageUrl)) {
+    if (!src || seen.has(src)) continue;
+    seen.add(src);
+    const hit = take(await fetchImage(src));
+    if (hit) return hit;
+  }
 
   const services = serviceCandidates(host, pageUrl).filter((src) => {
     if (!src || seen.has(src)) return false;
