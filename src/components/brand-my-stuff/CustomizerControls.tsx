@@ -95,8 +95,8 @@ export default function CustomizerControls({
         <SectionLabel>Pick a spot — {slotCount} on the cup</SectionLabel>
         <div className="flex flex-col gap-3">
           {[
-            { label: `Large · around the top · from $${SLOT_PRICE} · hop +$${LARGE_HOP_AMOUNT}`, slots: largeSlots },
-            { label: `Small · around the base · from $${SMALL_SLOT_PRICE} · hop +$${SMALL_HOP_AMOUNT}`, slots: smallSlots },
+            { label: `Large · around the top · from $${SLOT_PRICE} `, slots: largeSlots },
+            { label: `Small · around the base · from $${SMALL_SLOT_PRICE} `, slots: smallSlots },
           ].map((ring) =>
             ring.slots.length === 0 ? null : (
               <div key={ring.label}>

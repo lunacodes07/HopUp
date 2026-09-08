@@ -6,7 +6,7 @@ import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Brand My Stuff — HopUp",
-  description: "Ever wondered what your brand would look like on the things you use every day?",
+  description: "Ever wondered what your brand would look like on the things I use every day?",
   alternates: { canonical: `${SITE_URL}/brandmystuff` },
   openGraph: {
     title: "Brand My Stuff — HopUp",

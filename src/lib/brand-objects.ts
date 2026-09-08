@@ -58,7 +58,7 @@ export const BRAND_OBJECTS: BrandObject[] = [
     slug: "brandmystanley",
     name: "Brand My Stanley",
     item: "Tumbler",
-    tagline: "Your logo on the cup that goes everywhere.",
+    tagline: "Aloha's daily cup — on the street and on this page.",
     status: "live",
     slots: STANLEY_SLOT_COUNT,
     price: SMALL_SLOT_PRICE,
