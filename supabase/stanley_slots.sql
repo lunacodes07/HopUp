@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.stanley_slots (
   name TEXT NOT NULL,
   url TEXT NOT NULL,
   price INTEGER NOT NULL,
+  logo_url TEXT,
   payment_id TEXT UNIQUE
 );
 

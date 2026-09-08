@@ -11,6 +11,7 @@ import ObjectArt from "./ObjectArt";
 import { STANLEY_SLOT_COUNT } from "@/lib/brand-objects";
 import { getFormattedUrlInfo } from "@/lib/format-url";
 import { getProxiedLogoUrl } from "@/lib/logo";
+import { stanleyDisplayLogo } from "@/lib/stanley-slots";
 import { supabase } from "@/lib/supabase";
 import type { StanleySlot } from "@/lib/stanley-slots";
 
@@ -121,17 +122,29 @@ export default function StanleyExperience({
     const load = async () => {
       const { data, error } = await supabase
         .from("stanley_slots")
-        .select("id, slot_number, name, url, price, created_at");
+        .select("id, slot_number, name, url, price, logo_url, created_at");
       if (error) {
-        if (error.code !== "PGRST205") {
-          console.warn(error.message || "Stanley slots are not loaded yet");
+        const fallback = await supabase
+          .from("stanley_slots")
+          .select("id, slot_number, name, url, price, created_at");
+        if (fallback.error) {
+          if (fallback.error.code !== "PGRST205") {
+            console.warn(fallback.error.message || "Stanley slots are not loaded yet");
+          }
+          return;
         }
+        setClaimedBySlot(indexClaimed((fallback.data as StanleySlot[]) ?? []));
         return;
       }
       setClaimedBySlot(indexClaimed((data as StanleySlot[]) ?? []));
     };
 
     void load();
+    if (process.env.NODE_ENV !== "production") {
+      void fetch("/api/stanley/backfill-logos", { method: "POST" })
+        .then((response) => (response.ok ? load() : undefined))
+        .catch(() => undefined);
+    }
     const subscription = supabase
       .channel("stanley_slots_changes")
       .on(
@@ -170,7 +183,7 @@ export default function StanleyExperience({
           if (data.applied || data.duplicate || data.skipped) {
             const { data: rows } = await supabase
               .from("stanley_slots")
-              .select("id, slot_number, name, url, price, created_at");
+              .select("id, slot_number, name, url, price, logo_url, created_at");
             if (!cancelled && rows) setClaimedBySlot(indexClaimed(rows as StanleySlot[]));
             return;
           }
@@ -242,7 +255,7 @@ export default function StanleyExperience({
   const claimedLogos = useMemo(() => {
     const next: Record<number, string> = {};
     for (const [key, row] of Object.entries(claimedBySlot)) {
-      next[Number(key)] = getProxiedLogoUrl(row.url);
+      next[Number(key)] = stanleyDisplayLogo(row);
     }
     return next;
   }, [claimedBySlot]);
@@ -276,6 +289,7 @@ export default function StanleyExperience({
           url: finalUrl,
           nameFallback,
           slotNumber: selectedSlot,
+          ...(uploadedLogo ? { logoDataUrl: uploadedLogo } : {}),
         }),
       });
       const data = await response.json();
@@ -287,7 +301,7 @@ export default function StanleyExperience({
       setClaimError(err instanceof Error ? err.message : "Failed to start checkout.");
       setClaiming(false);
     }
-  }, [brandUrl, claiming, selectedSlot]);
+  }, [brandUrl, claiming, selectedSlot, uploadedLogo]);
 
   const traveler = displayBrandOf(brandUrl);
   const filledCount = Object.keys(claimedBySlot).length;

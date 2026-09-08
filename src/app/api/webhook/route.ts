@@ -3,6 +3,7 @@ import { Webhook } from 'standardwebhooks';
 import { applyHopPayment } from '@/lib/apply-hop-payment';
 import { applySponsoredPayment } from '@/lib/apply-sponsored-payment';
 import { applyStanleyPayment } from '@/lib/apply-stanley-payment';
+import { backfillMissingStanleyLogos } from '@/lib/backfill-stanley-logos';
 import { recordReferralSale } from '@/lib/creators-server';
 
 export async function POST(request: Request) {
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
         if (paymentData.metadata?.hopup_kind === 'stanley') {
           await applyStanleyPayment(paymentData);
           await recordReferralSale(paymentData);
+          await backfillMissingStanleyLogos();
           return NextResponse.json({ received: true, env: 'dev' });
         }
         console.warn('Skipping payment write in local dev so hopup.lol stays untouched.');
@@ -42,6 +44,7 @@ export async function POST(request: Request) {
       if (paymentData.metadata?.hopup_kind === 'stanley') {
         await applyStanleyPayment(paymentData);
         await recordReferralSale(paymentData);
+        await backfillMissingStanleyLogos();
         return NextResponse.json({ received: true });
       }
 

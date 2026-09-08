@@ -1,4 +1,5 @@
 import { STANLEY_SLOT_COUNT, nextSlotPrice, slotHopAmount, slotPrice } from "@/lib/brand-objects";
+import { getProxiedLogoUrl } from "@/lib/logo";
 
 export type StanleySlot = {
   id: string;
@@ -6,8 +7,26 @@ export type StanleySlot = {
   name: string;
   url: string;
   price: number;
+  logo_url?: string | null;
   created_at?: string;
 };
+
+function isStanleyStoredLogo(href?: string | null): boolean {
+  if (!href) return false;
+  try {
+    const parsed = new URL(href);
+    return parsed.protocol === "https:" && parsed.pathname.includes("/stanley-logos/");
+  } catch {
+    return false;
+  }
+}
+
+export function stanleyDisplayLogo(row: Pick<StanleySlot, "url" | "logo_url">): string {
+  if (row.logo_url && isStanleyStoredLogo(row.logo_url)) {
+    return `/api/stanley-logo?u=${encodeURIComponent(row.logo_url)}`;
+  }
+  return getProxiedLogoUrl(row.url);
+}
 
 export function isValidStanleySlot(slot: unknown): slot is number {
   const n = typeof slot === "number" ? slot : parseInt(String(slot), 10);

@@ -1,6 +1,35 @@
 import { supabaseServer } from "@/lib/supabase-server";
 import { fetchMetadata } from "@/lib/metadata";
+import { resolvePaymentStanleyLogo } from "@/lib/stanley-logo-server";
 import { isValidStanleySlot, stanleyNextSlotPrice } from "@/lib/stanley-slots";
+
+async function logoForPayment(opts: {
+  slotNumber: number;
+  url: string;
+  price: number;
+  metadata?: Record<string, unknown> | null;
+}) {
+  return resolvePaymentStanleyLogo({
+    slotNumber: opts.slotNumber,
+    url: opts.url,
+    price: opts.price,
+    rawLogo: opts.metadata?.hopup_logo,
+  });
+}
+
+async function backfillLogoIfMissing(
+  table: string,
+  rowId: string,
+  logoUrl: string | null
+) {
+  if (!logoUrl) return;
+  const { error } = await supabaseServer
+    .from(table)
+    .update({ logo_url: logoUrl })
+    .eq("id", rowId)
+    .is("logo_url", null);
+  if (error) console.error("Stanley logo backfill failed:", error);
+}
 
 export async function applyStanleyPayment(paymentData: any) {
   const url = paymentData.metadata?.hopup_url;
@@ -18,10 +47,19 @@ export async function applyStanleyPayment(paymentData: any) {
   if (paymentId) {
     const { data: already } = await supabaseServer
       .from(table)
-      .select("id")
+      .select("id, logo_url")
       .eq("payment_id", paymentId)
       .limit(1);
     if (already && already.length > 0) {
+      if (!already[0].logo_url) {
+        const logoUrl = await logoForPayment({
+          slotNumber,
+          url,
+          price: bidAmount,
+          metadata: paymentData.metadata,
+        });
+        await backfillLogoIfMissing(table, already[0].id, logoUrl);
+      }
       console.log(`Skipping duplicate Stanley payment ${paymentId}`);
       return { slotNumber: null, duplicate: true, table };
     }
@@ -43,6 +81,13 @@ export async function applyStanleyPayment(paymentData: any) {
     throw new Error("Invalid Stanley payment metadata");
   }
 
+  const logoUrl = await logoForPayment({
+    slotNumber,
+    url,
+    price: bidAmount,
+    metadata: paymentData.metadata,
+  });
+
   const { title: fetchedTitle } = await fetchMetadata(url);
   const payload = {
     slot_number: slotNumber,
@@ -50,12 +95,21 @@ export async function applyStanleyPayment(paymentData: any) {
     url,
     price: bidAmount,
     payment_id: paymentId || null,
+    logo_url: logoUrl,
   };
 
   if (!current) {
     const { error } = await supabaseServer.from(table).insert(payload);
 
     if (error && error.code === "23505" && /payment_id/i.test(error.message || "")) {
+      const { data: row } = await supabaseServer
+        .from(table)
+        .select("id, logo_url")
+        .eq("payment_id", paymentId)
+        .limit(1);
+      if (row?.[0] && !row[0].logo_url) {
+        await backfillLogoIfMissing(table, row[0].id, logoUrl);
+      }
       return { slotNumber: null, duplicate: true, table };
     }
 
@@ -78,12 +132,21 @@ export async function applyStanleyPayment(paymentData: any) {
       url: payload.url,
       price: payload.price,
       payment_id: payload.payment_id,
+      logo_url: payload.logo_url,
     })
     .eq("slot_number", slotNumber)
     .eq("price", current.price)
     .select("id");
 
   if (error && error.code === "23505" && /payment_id/i.test(error.message || "")) {
+    const { data: row } = await supabaseServer
+      .from(table)
+      .select("id, logo_url")
+      .eq("payment_id", paymentId)
+      .limit(1);
+    if (row?.[0] && !row[0].logo_url) {
+      await backfillLogoIfMissing(table, row[0].id, logoUrl);
+    }
     return { slotNumber: null, duplicate: true, table };
   }
 
