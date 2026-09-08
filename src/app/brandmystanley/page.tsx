@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Brand My Stanley — HopUp",
-    description: "Aloha's daily tumbler. Real cup plus this page. Hop any taken spot.",
+    description: "Your brand on my Stanley. My Stanley goes everywhere. Your brand comes with it.",
     images: [STANLEY_OG.url],
   },
 };
