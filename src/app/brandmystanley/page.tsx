@@ -8,6 +8,13 @@ import { SITE_URL } from "@/lib/site";
 
 export const revalidate = 60;
 
+const STANLEY_OG = {
+  url: `${SITE_URL}/ogstanley.png`,
+  width: 1200,
+  height: 630,
+  alt: "Brand My Stanley — HopUp",
+};
+
 export const metadata: Metadata = {
   title: "Brand My Stanley — HopUp",
   description: "Aloha's daily tumbler — real cup plus this page. 6 big spots from $35 (hop +$15), 6 small from $20 (hop +$10).",
@@ -17,11 +24,13 @@ export const metadata: Metadata = {
     description: "Aloha's daily tumbler — real cup plus this page. 6 big spots from $35 (hop +$15), 6 small from $20 (hop +$10).",
     url: `${SITE_URL}/brandmystanley`,
     type: "website",
+    images: [STANLEY_OG],
   },
   twitter: {
     card: "summary_large_image",
     title: "Brand My Stanley — HopUp",
     description: "Aloha's daily tumbler. Real cup plus this page. Hop any taken spot.",
+    images: [STANLEY_OG.url],
   },
 };
 
