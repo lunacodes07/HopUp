@@ -13,6 +13,7 @@ import { isSlotAvailable } from '@/lib/sponsored-server';
 import { isValidStanleySlot, stanleyNextSlotPrice } from '@/lib/stanley-slots';
 import { getStanleySlot } from '@/lib/stanley-slots-server';
 import { getFormattedUrlInfo } from '@/lib/format-url';
+import { storeStanleyLogo } from '@/lib/stanley-logo-server';
 
 // Safely initialize Upstash Ratelimit only if the environment variables exist
 const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN 
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { url, bidAmount, category, nameFallback, kind, slotNumber, weeks } = body;
+    const { url, bidAmount, category, nameFallback, kind, slotNumber, weeks, logoDataUrl } = body;
 
     const cookieStore = await cookies();
     const refSlug = cookieStore.get(CREATOR_COOKIE)?.value;
@@ -73,6 +74,15 @@ export async function POST(request: Request) {
 
       const price = stanleyNextSlotPrice(slotNumber, currentPrice);
 
+      let storedLogo: string | null = null;
+      if (typeof logoDataUrl === 'string' && logoDataUrl.startsWith('data:image/')) {
+        storedLogo = await storeStanleyLogo(logoDataUrl, {
+          slotNumber,
+          url: finalUrl,
+          price,
+        });
+      }
+
       amountInCents = price * 100;
       returnHop = finalUrl;
       metadata = {
@@ -82,6 +92,7 @@ export async function POST(request: Request) {
         hopup_category: DEFAULT_CATEGORY,
         hopup_name_fallback: nameFallback || fromUrl || finalUrl,
         hopup_slot: String(slotNumber),
+        ...(storedLogo ? { hopup_logo: storedLogo } : {}),
         ...(creator ? { hopup_ref: creator.slug } : {}),
       };
     } else if (kind === 'sponsored') {

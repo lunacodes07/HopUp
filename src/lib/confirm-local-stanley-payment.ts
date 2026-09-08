@@ -1,5 +1,6 @@
 import { dodo } from "@/lib/dodo";
 import { applyStanleyPayment } from "@/lib/apply-stanley-payment";
+import { backfillMissingStanleyLogos } from "@/lib/backfill-stanley-logos";
 import { recordReferralSale } from "@/lib/creators-server";
 import { isValidStanleySlot } from "@/lib/stanley-slots";
 
@@ -50,6 +51,7 @@ export async function confirmLocalStanleyPayment(opts: {
   }
 
   const result = await applyStanleyPayment(match);
+  await backfillMissingStanleyLogos();
   const metadata = Object.fromEntries(
     Object.entries(match.metadata ?? {}).map(([key, value]) => [
       key,

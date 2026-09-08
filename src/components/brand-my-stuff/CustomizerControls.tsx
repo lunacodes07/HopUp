@@ -11,8 +11,8 @@ import {
   nextSlotPrice,
   slotHopAmount,
 } from "@/lib/brand-objects";
-import { getProxiedLogoUrl, handleLogoError } from "@/lib/logo";
-import type { StanleySlot } from "@/lib/stanley-slots";
+import { handleLogoError } from "@/lib/logo";
+import { stanleyDisplayLogo, type StanleySlot } from "@/lib/stanley-slots";
 
 type CustomizerControlsProps = {
   slotCount: number;
@@ -82,7 +82,7 @@ export default function CustomizerControls({
 }: CustomizerControlsProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const selectedClaimed = claimedBySlot[selectedSlot];
-  const occupantLogo = selectedClaimed ? getProxiedLogoUrl(selectedClaimed.url) : null;
+  const occupantLogo = selectedClaimed ? stanleyDisplayLogo(selectedClaimed) : null;
   const formLogo = previewLogo;
   const hopAmount = slotHopAmount(selectedSlot);
   const payPrice = nextSlotPrice(selectedSlot, selectedClaimed?.price);
@@ -104,7 +104,7 @@ export default function CustomizerControls({
                 <div className="grid grid-cols-6 gap-1.5">
                   {ring.slots.map((n) => {
                     const claimed = claimedBySlot[n];
-                    const shownLogo = slotLogos[n] || (claimed ? getProxiedLogoUrl(claimed.url) : undefined);
+                    const shownLogo = slotLogos[n] || (claimed ? stanleyDisplayLogo(claimed) : undefined);
                     const filled = Boolean(shownLogo);
                     const selected = n === selectedSlot;
                     return (
