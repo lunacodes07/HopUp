@@ -91,13 +91,11 @@ export async function resolvePaymentStanleyLogo(opts: {
   return null;
 }
 
-export async function storeStanleyLogo(
-  dataUrl: string,
-  intent?: { slotNumber: number; url: string; price: number }
-): Promise<string> {
-  const image = parseDataImage(dataUrl);
-  if (!image) throw new Error("Logo must be a PNG or JPG under 1MB.");
-
+async function uploadStanleyLogo(image: {
+  bytes: Buffer;
+  contentType: string;
+  ext: string;
+}, intent?: { slotNumber: number; url: string; price: number }): Promise<string> {
   const path = intent
     ? stanleyLogoIntentPath(intent.slotNumber, intent.url, intent.price, image.ext)
     : `${crypto.randomUUID()}.${image.ext}`;
@@ -112,4 +110,44 @@ export async function storeStanleyLogo(
   }
 
   return path;
+}
+
+export async function storeStanleyLogo(
+  dataUrl: string,
+  intent?: { slotNumber: number; url: string; price: number }
+): Promise<string> {
+  const image = parseDataImage(dataUrl);
+  if (!image) throw new Error("Logo must be a PNG or JPG under 1MB.");
+  return uploadStanleyLogo(image, intent);
+}
+
+export async function storeStanleyLogoFromUrl(
+  href: string,
+  intent?: { slotNumber: number; url: string; price: number }
+): Promise<string> {
+  const parsed = new URL(href);
+  if (parsed.protocol !== "https:") throw new Error("Logo URL must be https.");
+
+  const response = await fetch(href);
+  if (!response.ok) throw new Error("Could not download that logo.");
+
+  const contentType = (response.headers.get("content-type") || "").toLowerCase();
+  const ext = contentType.includes("jpeg") || contentType.includes("jpg")
+    ? "jpg"
+    : contentType.includes("webp")
+      ? "webp"
+      : "png";
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (bytes.length < 32 || bytes.length > MAX_BYTES) {
+    throw new Error("Logo must be a PNG or JPG under 1MB.");
+  }
+
+  return uploadStanleyLogo(
+    {
+      bytes,
+      contentType: ext === "jpg" ? "image/jpeg" : ext === "webp" ? "image/webp" : "image/png",
+      ext,
+    },
+    intent
+  );
 }
