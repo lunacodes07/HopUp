@@ -104,7 +104,7 @@ export default function CustomizerControls({
                 <div className="grid grid-cols-6 gap-1.5">
                   {ring.slots.map((n) => {
                     const claimed = claimedBySlot[n];
-                    const shownLogo = claimed ? getProxiedLogoUrl(claimed.url) : slotLogos[n];
+                    const shownLogo = slotLogos[n] || (claimed ? getProxiedLogoUrl(claimed.url) : undefined);
                     const filled = Boolean(shownLogo);
                     const selected = n === selectedSlot;
                     return (
@@ -245,7 +245,7 @@ export default function CustomizerControls({
               </div>
               <div className="flex flex-col gap-1.5">
                 <p className="text-[12px] text-secondary">
-                  {uploaded ? `On spot ${selectedSlot}` : "Pulled from your link"}
+                  {uploaded ? "Your upload" : "Pulled from your link"}
                 </p>
                 <button
                   type="button"

@@ -108,7 +108,7 @@ export default function StanleyExperience({
   const [claimedBySlot, setClaimedBySlot] = useState<Record<number, StanleySlot>>(() =>
     indexClaimed(initialSlots)
   );
-  const [slotLogos, setSlotLogos] = useState<Record<number, string>>({});
+  const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState(() => firstOpenSlot(indexClaimed(initialSlots)));
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
   const [brandUrl, setBrandUrl] = useState("");
@@ -224,26 +224,19 @@ export default function StanleyExperience({
     });
   }, []);
 
-  const handleUpload = useCallback(
-    async (file: File) => {
-      setUploadError(null);
-      try {
-        const dataUrl = await fitLogoToSquare(file);
-        setSlotLogos((prev) => ({ ...prev, [selectedSlot]: dataUrl }));
-      } catch {
-        setUploadError("Could not read that image. Try a PNG or JPG.");
-      }
-    },
-    [selectedSlot]
-  );
+  const handleUpload = useCallback(async (file: File) => {
+    setUploadError(null);
+    try {
+      const dataUrl = await fitLogoToSquare(file);
+      setUploadedLogo(dataUrl);
+    } catch {
+      setUploadError("Could not read that image. Try a PNG or JPG.");
+    }
+  }, []);
 
-  const clearSlot = useCallback(() => {
-    setSlotLogos((prev) => {
-      const next = { ...prev };
-      delete next[selectedSlot];
-      return next;
-    });
-  }, [selectedSlot]);
+  const clearUpload = useCallback(() => {
+    setUploadedLogo(null);
+  }, []);
 
   const claimedLogos = useMemo(() => {
     const next: Record<number, string> = {};
@@ -253,7 +246,7 @@ export default function StanleyExperience({
     return next;
   }, [claimedBySlot]);
 
-  const previewLogo = slotLogos[selectedSlot] || fetchedLogo;
+  const previewLogo = uploadedLogo || fetchedLogo;
 
   const displayLogos = useMemo(() => {
     const next = { ...claimedLogos };
@@ -496,9 +489,9 @@ export default function StanleyExperience({
               slotLogos={displayLogos}
               claimedBySlot={claimedBySlot}
               previewLogo={previewLogo}
-              uploaded={Boolean(slotLogos[selectedSlot])}
+              uploaded={Boolean(uploadedLogo)}
               onUploadLogo={handleUpload}
-              onClearSlot={clearSlot}
+              onClearSlot={clearUpload}
               brandUrl={brandUrl}
               onBrandUrlChange={setBrandUrl}
               onClaim={handleClaim}
