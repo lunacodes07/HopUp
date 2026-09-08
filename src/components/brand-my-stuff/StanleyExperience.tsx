@@ -108,7 +108,7 @@ export default function StanleyExperience({
   const [claimedBySlot, setClaimedBySlot] = useState<Record<number, StanleySlot>>(() =>
     indexClaimed(initialSlots)
   );
-  const [slotLogos, setSlotLogos] = useState<Record<number, string>>({});
+  const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState(() => firstOpenSlot(indexClaimed(initialSlots)));
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
   const [brandUrl, setBrandUrl] = useState("");
@@ -213,9 +213,10 @@ export default function StanleyExperience({
     };
   }, [brandUrl]);
 
-  const selectSlot = useCallback((n: number) => {
+  const selectSlot = useCallback((n: number, opts?: { scroll?: boolean }) => {
     setSelectedSlot(n);
     setClaimError(null);
+    if (opts?.scroll === false) return;
     requestAnimationFrame(() => {
       document.getElementById("claim-spot")?.scrollIntoView({
         behavior: "smooth",
@@ -224,26 +225,19 @@ export default function StanleyExperience({
     });
   }, []);
 
-  const handleUpload = useCallback(
-    async (file: File) => {
-      setUploadError(null);
-      try {
-        const dataUrl = await fitLogoToSquare(file);
-        setSlotLogos((prev) => ({ ...prev, [selectedSlot]: dataUrl }));
-      } catch {
-        setUploadError("Could not read that image. Try a PNG or JPG.");
-      }
-    },
-    [selectedSlot]
-  );
+  const handleUpload = useCallback(async (file: File) => {
+    setUploadError(null);
+    try {
+      const dataUrl = await fitLogoToSquare(file);
+      setUploadedLogo(dataUrl);
+    } catch {
+      setUploadError("Could not read that image. Try a PNG or JPG.");
+    }
+  }, []);
 
-  const clearSlot = useCallback(() => {
-    setSlotLogos((prev) => {
-      const next = { ...prev };
-      delete next[selectedSlot];
-      return next;
-    });
-  }, [selectedSlot]);
+  const clearUpload = useCallback(() => {
+    setUploadedLogo(null);
+  }, []);
 
   const claimedLogos = useMemo(() => {
     const next: Record<number, string> = {};
@@ -253,7 +247,7 @@ export default function StanleyExperience({
     return next;
   }, [claimedBySlot]);
 
-  const previewLogo = slotLogos[selectedSlot] || fetchedLogo;
+  const previewLogo = uploadedLogo || fetchedLogo;
 
   const displayLogos = useMemo(() => {
     const next = { ...claimedLogos };
@@ -446,18 +440,23 @@ export default function StanleyExperience({
             <div className="h-[420px] sm:h-[480px] lg:h-[560px]">
               <TumblerViewer
                 slotLogos={displayLogos}
-                claimedUrls={Object.fromEntries(
-                  Object.values(claimedBySlot).map((row) => [row.slot_number, row.url])
+                claimedSlots={Object.fromEntries(
+                  Object.values(claimedBySlot).map((row) => [row.slot_number, true])
                 )}
                 selectedSlot={selectedSlot}
-                onSelectSlot={selectSlot}
+                onSelectSlot={(n) => selectSlot(n, { scroll: false })}
                 onHoverSlot={setHoveredSlot}
               />
             </div>
 
-            <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur px-3 py-1.5 text-[11px] font-medium text-secondary border border-border/60 pointer-events-none">
-              <RotateCcw className="w-3 h-3" />
-              Drag to spin
+            <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-2 pointer-events-none">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur px-3 py-1.5 text-[11px] font-medium text-secondary border border-border/60">
+                <RotateCcw className="w-3 h-3" />
+                Drag to spin
+              </span>
+              <span className="rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-[11px] font-semibold text-foreground border border-border/60 tabular-nums">
+                Spot {selectedSlot}
+              </span>
             </div>
 
             <div className="absolute bottom-3.5 left-0 right-0 flex justify-center pointer-events-none px-4">
@@ -476,7 +475,7 @@ export default function StanleyExperience({
                     )}
                   </>
                 ) : (
-                  "Tap a spot, add your link — we'll pull the logo"
+                  "Pick a numbered spot to claim it"
                 )}
               </span>
             </div>
@@ -496,9 +495,9 @@ export default function StanleyExperience({
               slotLogos={displayLogos}
               claimedBySlot={claimedBySlot}
               previewLogo={previewLogo}
-              uploaded={Boolean(slotLogos[selectedSlot])}
+              uploaded={Boolean(uploadedLogo)}
               onUploadLogo={handleUpload}
-              onClearSlot={clearSlot}
+              onClearSlot={clearUpload}
               brandUrl={brandUrl}
               onBrandUrlChange={setBrandUrl}
               onClaim={handleClaim}
