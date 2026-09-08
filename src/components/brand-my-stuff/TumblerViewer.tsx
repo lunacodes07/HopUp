@@ -6,7 +6,6 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import {
   ContactShadows,
   Environment,
-  Html,
   Lightformer,
   OrbitControls,
   RoundedBox,
@@ -237,34 +236,23 @@ function useSlotLogoTexture(logoUrl: string | null) {
   return textures;
 }
 
-function slotHref(url: string) {
-  if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith("@")) return `https://x.com/${url.slice(1)}`;
-  return `https://${url}`;
-}
-
-function slotHost(url: string) {
-  return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-}
-
 function SlotPatch({
   spec,
   logoUrl,
   selected,
-  claimedUrl,
+  claimed,
   onSelect,
   onHover,
 }: {
   spec: SlotSpec;
   logoUrl: string | null;
   selected: boolean;
-  claimedUrl?: string | null;
+  claimed?: boolean;
   onSelect: (n: number) => void;
   onHover?: (n: number | null) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const claimed = Boolean(claimedUrl);
   const { normal: logoTexture, claim: claimTexture } = useSlotLogoTexture(logoUrl);
   const showClaim = claimed && hovered;
   const activeLogo = showClaim ? claimTexture ?? logoTexture : logoTexture;
@@ -300,16 +288,30 @@ function SlotPatch({
   }, []);
 
   const width = spec.thetaWidth * spec.radius;
+  const press = useRef<{ x: number; y: number; pointerType: string } | null>(null);
   const pointer = {
-    onClick: (e: { stopPropagation: () => void }) => {
+    onPointerDown: (e: { clientX: number; clientY: number; pointerType: string }) => {
+      press.current = { x: e.clientX, y: e.clientY, pointerType: e.pointerType };
+    },
+    onPointerUp: (e: { clientX: number; clientY: number; pointerType: string; stopPropagation: () => void }) => {
+      const start = press.current;
+      press.current = null;
+      if (!start) return;
+      // Fingers scrolling the page or spinning the cup should not change the slot.
+      if (start.pointerType !== "mouse") return;
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      if (dx * dx + dy * dy > 64) return;
       e.stopPropagation();
       onSelect(spec.n);
     },
-    onPointerOver: () => {
+    onPointerOver: (e: { pointerType: string }) => {
+      if (e.pointerType !== "mouse") return;
       document.body.style.cursor = "pointer";
       keepHover();
     },
-    onPointerOut: () => {
+    onPointerOut: (e: { pointerType: string }) => {
+      if (e.pointerType !== "mouse") return;
       document.body.style.cursor = "auto";
       leaveHover();
     },
@@ -342,28 +344,6 @@ function SlotPatch({
           metalness={0.05}
           side={THREE.DoubleSide}
         />
-      )}
-      {showClaim && claimedUrl && (
-        <Html
-          position={[0, spec.height / 2 + 0.12, 0.02]}
-          center
-          occlude={false}
-          zIndexRange={[30, 0]}
-          style={{ pointerEvents: "auto" }}
-        >
-          <a
-            href={slotHref(claimedUrl)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onPointerEnter={keepHover}
-            onPointerLeave={leaveHover}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-            className="block max-w-[160px] truncate rounded-full border border-[#E8E4DC] bg-white px-2.5 py-0.5 text-[10px] font-medium text-[#2D2926] shadow-[0_6px_16px_-10px_rgba(45,41,38,0.45)] hover:text-[#8C2D55]"
-          >
-            {slotHost(claimedUrl)}
-          </a>
-        </Html>
       )}
     </mesh>
   );
@@ -542,7 +522,7 @@ function Turntable({
 export type TumblerViewerProps = {
   /** slot number -> square-fit logo data URL or proxied logo */
   slotLogos: Record<number, string>;
-  claimedUrls?: Record<number, string>;
+  claimedSlots?: Record<number, boolean>;
   selectedSlot: number;
   onSelectSlot: (n: number) => void;
   onHoverSlot?: (n: number | null) => void;
@@ -550,7 +530,7 @@ export type TumblerViewerProps = {
 
 export default function TumblerViewer({
   slotLogos,
-  claimedUrls = {},
+  claimedSlots = {},
   selectedSlot,
   onSelectSlot,
   onHoverSlot,
@@ -598,7 +578,7 @@ export default function TumblerViewer({
             spec={spec}
             logoUrl={slotLogos[spec.n] ?? null}
             selected={selectedSlot === spec.n}
-            claimedUrl={claimedUrls[spec.n]}
+            claimed={Boolean(claimedSlots[spec.n])}
             onSelect={onSelectSlot}
             onHover={onHoverSlot}
           />

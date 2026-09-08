@@ -92,7 +92,7 @@ export default function CustomizerControls({
   return (
     <div className="flex flex-col gap-7">
       <div>
-        <SectionLabel>Pick a spot — {slotCount} on the cup</SectionLabel>
+        <SectionLabel>Pick your spot — {slotCount} on the cup</SectionLabel>
         <div className="flex flex-col gap-3">
           {[
             { label: `Large · around the top · from $${SLOT_PRICE} `, slots: largeSlots },

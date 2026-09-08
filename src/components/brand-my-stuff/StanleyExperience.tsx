@@ -213,9 +213,10 @@ export default function StanleyExperience({
     };
   }, [brandUrl]);
 
-  const selectSlot = useCallback((n: number) => {
+  const selectSlot = useCallback((n: number, opts?: { scroll?: boolean }) => {
     setSelectedSlot(n);
     setClaimError(null);
+    if (opts?.scroll === false) return;
     requestAnimationFrame(() => {
       document.getElementById("claim-spot")?.scrollIntoView({
         behavior: "smooth",
@@ -439,18 +440,23 @@ export default function StanleyExperience({
             <div className="h-[420px] sm:h-[480px] lg:h-[560px]">
               <TumblerViewer
                 slotLogos={displayLogos}
-                claimedUrls={Object.fromEntries(
-                  Object.values(claimedBySlot).map((row) => [row.slot_number, row.url])
+                claimedSlots={Object.fromEntries(
+                  Object.values(claimedBySlot).map((row) => [row.slot_number, true])
                 )}
                 selectedSlot={selectedSlot}
-                onSelectSlot={selectSlot}
+                onSelectSlot={(n) => selectSlot(n, { scroll: false })}
                 onHoverSlot={setHoveredSlot}
               />
             </div>
 
-            <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur px-3 py-1.5 text-[11px] font-medium text-secondary border border-border/60 pointer-events-none">
-              <RotateCcw className="w-3 h-3" />
-              Drag to spin
+            <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-2 pointer-events-none">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur px-3 py-1.5 text-[11px] font-medium text-secondary border border-border/60">
+                <RotateCcw className="w-3 h-3" />
+                Drag to spin
+              </span>
+              <span className="rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-[11px] font-semibold text-foreground border border-border/60 tabular-nums">
+                Spot {selectedSlot}
+              </span>
             </div>
 
             <div className="absolute bottom-3.5 left-0 right-0 flex justify-center pointer-events-none px-4">
@@ -469,7 +475,7 @@ export default function StanleyExperience({
                     )}
                   </>
                 ) : (
-                  "Tap a spot, add your link — we'll pull the logo"
+                  "Pick a numbered spot to claim it"
                 )}
               </span>
             </div>
