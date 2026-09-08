@@ -50,7 +50,7 @@ export default function BrandMyStuffHub() {
             transition={{ duration: 0.6, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
             className="relative mt-4 text-base md:text-lg text-secondary max-w-[460px] mx-auto text-balance"
           >
-            Ever wondered what your brand would look like on the things you use
+            Ever wondered what your brand would look like on the things I use
             every day?
           </motion.p>
 

@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { RotateCcw } from "lucide-react";
 import LiveStats from "@/components/LiveStats";
 import CustomizerControls from "./CustomizerControls";
+import ObjectArt from "./ObjectArt";
 import { STANLEY_SLOT_COUNT } from "@/lib/brand-objects";
 import { getFormattedUrlInfo } from "@/lib/format-url";
 import { getProxiedLogoUrl } from "@/lib/logo";
@@ -320,63 +321,111 @@ export default function StanleyExperience({
         </p>
 
         {/* Hero */}
-        <div className="text-center md:text-left">
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-            className="text-[36px] leading-[1.05] md:text-[54px] font-semibold tracking-tight text-foreground"
-          >
-            Brand My <span className="text-accent">Stanley.</span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-2.5 text-[15px] md:text-lg text-secondary max-w-[440px] mx-auto md:mx-0 text-balance"
-          >
-            See your brand on my Stanley — hop any spot that is already taken.
-          </motion.p>
-        </div>
+        <div className="md:grid md:grid-cols-[minmax(0,1fr)_minmax(260px,340px)] md:gap-10 md:items-start">
+          <div className="text-center md:text-left">
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+              className="text-[36px] leading-[1.05] md:text-[54px] font-semibold tracking-tight text-foreground"
+            >
+              Brand My <span className="text-accent">Stanley.</span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-2.5 text-[15px] md:text-lg text-secondary max-w-[480px] mx-auto md:mx-0 text-balance"
+            >
+              I&apos;m Aloha. This is a real cup I take out every day — plus this page, so more people see your brand.
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-2 text-[13px] text-secondary/90"
+            >
+              <a
+                href="https://x.com/alohaproxy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-foreground hover:text-accent-dark transition-colors"
+              >
+                @alohaproxy
+              </a>
+            </motion.p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-6 md:mt-7"
-          aria-live="polite"
-        >
-          <div className="flex flex-wrap items-baseline justify-center md:justify-start gap-x-2 gap-y-0.5">
-            <span className="text-[28px] md:text-[34px] font-semibold tracking-tight tabular-nums text-foreground leading-none">
-              ${raised}
-            </span>
-            <span className="text-[15px] md:text-base font-medium text-secondary">
-              raised on this Stanley
-            </span>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.14, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-6 md:mt-7"
+              aria-live="polite"
+            >
+              <div className="flex flex-wrap items-baseline justify-center md:justify-start gap-x-2 gap-y-0.5">
+                <span className="text-[28px] md:text-[34px] font-semibold tracking-tight tabular-nums text-foreground leading-none">
+                  ${raised}
+                </span>
+                <span className="text-[15px] md:text-base font-medium text-secondary">
+                  raised on this Stanley
+                </span>
+              </div>
+              <p className="mt-1.5 text-[12px] text-secondary text-center md:text-left">
+                hop any taken spot
+                {filledCount > 0 && (
+                  <span className="tabular-nums">
+                    {" "}
+                    · {filledCount}/{SLOT_COUNT} spots filled
+                  </span>
+                )}
+              </p>
+              <div
+                className="mt-3 h-1.5 w-full max-w-[320px] mx-auto md:mx-0 rounded-full bg-border/70 overflow-hidden"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={SLOT_COUNT}
+                aria-valuenow={filledCount}
+                aria-label="Stanley spots filled"
+              >
+                <div
+                  className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out"
+                  style={{ width: `${(filledCount / SLOT_COUNT) * 100}%` }}
+                />
+              </div>
+            </motion.div>
           </div>
-          <p className="mt-1.5 text-[12px] text-secondary text-center md:text-left">
-            hop any taken spot
-            {filledCount > 0 && (
-              <span className="tabular-nums">
-                {" "}
-                · {filledCount}/{SLOT_COUNT} spots filled
-              </span>
-            )}
-          </p>
-          <div
-            className="mt-3 h-1.5 w-full max-w-[320px] mx-auto md:mx-0 rounded-full bg-border/70 overflow-hidden"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={SLOT_COUNT}
-            aria-valuenow={filledCount}
-            aria-label="Stanley spots filled"
+
+          <motion.aside
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-8 md:mt-1 rounded-3xl border border-white/70 bg-white/50 backdrop-blur p-5 md:p-6 text-left"
           >
-            <div
-              className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out"
-              style={{ width: `${(filledCount / SLOT_COUNT) * 100}%` }}
-            />
-          </div>
-        </motion.div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
+              Where it goes
+            </p>
+            <p className="mt-2 text-[15px] md:text-base text-foreground leading-snug text-balance">
+              This Stanley goes with my Mac every day ~ to uni, cafes, and work.
+            </p>
+
+            <Link
+              href="/brandmystuff"
+              className="group mt-5 flex items-center gap-3 rounded-2xl border border-border/70 bg-white/70 px-3 py-2.5 transition-colors hover:border-accent/50"
+            >
+              <span className="w-11 h-11 shrink-0">
+                <ObjectArt slug="brandmylaptop" tint="#9AB0C4" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[13.5px] font-semibold text-foreground">
+                  Wanna brand my Mac?
+                </span>
+                <span className="mt-0.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary">
+                  Coming soon
+                </span>
+              </span>
+            </Link>
+          </motion.aside>
+        </div>
 
         {/* Experience */}
         <motion.div
@@ -460,7 +509,7 @@ export default function StanleyExperience({
         </motion.div>
 
         <p className="mt-10 text-center text-[12px] text-secondary/80 max-w-[520px] mx-auto">
-          Generic premium tumbler. Not affiliated with or endorsed by Stanley — we just
+          Generic premium tumbler. Not affiliated with or endorsed by Stanley — I just
           drink a lot of water.
         </p>
       </div>
