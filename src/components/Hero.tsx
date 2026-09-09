@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, Minus, Plus, Loader2, ChevronDown } from "lucide-react";
@@ -307,7 +308,22 @@ export default function Hero() {
   return (
     <section className="relative w-full px-4 md:px-8 pt-20 md:pt-24 pb-3 md:pb-4">
       <div className="w-full max-w-[1000px] mx-auto flex flex-col items-center">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 mb-4 text-center">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mb-4 text-center">
+          <Link
+            href="/brandmystanley"
+            className="group relative inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-white/75 pl-1 pr-2.5 py-0.5 text-[12px] font-semibold text-foreground shadow-[0_4px_14px_-8px_rgba(255,140,115,0.7)] backdrop-blur transition-colors hover:border-accent/60 hover:bg-white"
+          >
+            <span className="relative overflow-hidden rounded-full bg-accent px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.12em] text-white">
+              New
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 animate-glass-sheen bg-gradient-to-r from-transparent via-white/80 to-transparent"
+              />
+            </span>
+            <span>Brand My Stanley</span>
+            <ArrowRight className="w-3 h-3 text-accent transition-transform duration-300 group-hover:translate-x-0.5" />
+          </Link>
+          <span className="hidden sm:inline text-border">·</span>
           <LiveStats />
           <span className="hidden sm:inline text-border">·</span>
           <div className="hidden sm:block">

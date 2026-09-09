@@ -80,6 +80,23 @@ export default function Navbar() {
             >
               About
             </Link>
+            <Link
+              href="/brandmystanley"
+              className={`inline-flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                pathname === "/brandmystanley"
+                  ? "text-foreground"
+                  : "text-secondary hover:text-foreground"
+              }`}
+            >
+              Stanley
+              <span className="relative overflow-hidden rounded-full bg-accent px-1.5 py-px text-[8px] font-bold uppercase tracking-[0.12em] text-white leading-none">
+                New
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 animate-glass-sheen bg-gradient-to-r from-transparent via-white/80 to-transparent"
+                />
+              </span>
+            </Link>
           </div>
         </div>
 
@@ -99,6 +116,20 @@ export default function Navbar() {
               <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
           </button>
         </div>
+
+        <Link
+          href="/brandmystanley"
+          className="md:hidden mr-1 inline-flex items-center gap-1 rounded-full border border-accent/30 bg-white/80 pl-1 pr-2 py-0.5 text-[11px] font-semibold text-foreground"
+        >
+          <span className="relative overflow-hidden rounded-full bg-accent px-1 py-px text-[8px] font-bold uppercase tracking-[0.1em] text-white leading-none">
+            New
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 animate-glass-sheen bg-gradient-to-r from-transparent via-white/80 to-transparent"
+            />
+          </span>
+          Stanley
+        </Link>
 
         {/* Mobile Hamburger */}
         <button
@@ -152,6 +183,16 @@ export default function Navbar() {
                 onClick={() => setIsOpen(false)}
               >
                 About
+              </Link>
+              <Link
+                href="/brandmystanley"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-secondary hover:text-foreground transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Brand My Stanley
+                <span className="relative overflow-hidden rounded-full bg-accent px-1.5 py-px text-[8px] font-bold uppercase tracking-[0.12em] text-white leading-none">
+                  New
+                </span>
               </Link>
               
               <button
