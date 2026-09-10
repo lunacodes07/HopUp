@@ -19,6 +19,15 @@ function cookieOptions(maxAge?: number) {
 }
 
 export function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  if (
+    process.env.NODE_ENV === "production" &&
+    !process.env.HOPUP_ADMIN_SECRET &&
+    (path === "/admin" || path.startsWith("/admin/"))
+  ) {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
   const fromQuery = normalizeCreatorSlug(
     request.nextUrl.searchParams.get("ref") || request.nextUrl.searchParams.get("via")
   );

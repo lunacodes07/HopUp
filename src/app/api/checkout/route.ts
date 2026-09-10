@@ -14,6 +14,7 @@ import { isValidStanleySlot, stanleyNextSlotPrice } from '@/lib/stanley-slots';
 import { getStanleySlot } from '@/lib/stanley-slots-server';
 import { getFormattedUrlInfo } from '@/lib/format-url';
 import { storeStanleyLogo } from '@/lib/stanley-logo-server';
+import { storePendingProductLogo } from '@/lib/product-logo-server';
 
 // Safely initialize Upstash Ratelimit only if the environment variables exist
 const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN 
@@ -161,6 +162,11 @@ export async function POST(request: Request) {
 
       const existingProduct = existingData && existingData.length > 0 ? existingData[0] : null;
 
+      let storedLogo: string | null = null;
+      if (typeof logoDataUrl === 'string' && logoDataUrl.startsWith('data:image/')) {
+        storedLogo = await storePendingProductLogo(logoDataUrl);
+      }
+
       amountInCents = amount * 100;
       metadata = {
         hopup_url: url,
@@ -168,6 +174,7 @@ export async function POST(request: Request) {
         hopup_category: category,
         hopup_name_fallback: nameFallback || url,
         hopup_product_id: existingProduct?.id || 'new',
+        ...(storedLogo ? { hopup_logo: storedLogo } : {}),
         ...(creator ? { hopup_ref: creator.slug } : {}),
       };
     }

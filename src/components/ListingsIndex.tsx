@@ -2,7 +2,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import VisitSiteButton from "@/components/VisitSiteButton";
-import { getProxiedLogoUrl } from "@/lib/logo";
+import { getProductLogoUrl } from "@/lib/logo";
 import { displayHost, productPath, toExternalUrl } from "@/lib/product-path";
 import { getTimeAgo } from "@/lib/time-ago";
 import type { Product } from "@/types";
@@ -64,7 +64,7 @@ export default function ListingsIndex({ products }: { products: Product[] }) {
                       className="relative shrink-0 w-11 h-11 rounded-xl overflow-hidden bg-muted border border-border/40"
                     >
                       <img
-                        src={getProxiedLogoUrl(item.url)}
+                        src={getProductLogoUrl(item)}
                         alt=""
                         className="absolute inset-0 w-full h-full object-cover bg-white"
                       />

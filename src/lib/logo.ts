@@ -25,6 +25,23 @@ export function getProxiedLogoUrl(raw?: string | null): string {
   }
 }
 
+/** Leaderboard logo: uploaded override when present, otherwise the site favicon. */
+export function getProductLogoUrl(product: {
+  id?: string;
+  url?: string | null;
+  logo_url?: string | null;
+}): string {
+  if (product.logo_url) {
+    if (product.logo_url.includes("/product-logos/")) {
+      return `/api/product-logo?u=${encodeURIComponent(product.logo_url)}`;
+    }
+    return product.logo_url;
+  }
+  const proxied = getProxiedLogoUrl(product.url);
+  if (!product.id || proxied === "/globe.svg") return proxied;
+  return `${proxied}&id=${encodeURIComponent(product.id)}`;
+}
+
 export function handleLogoError(img: HTMLImageElement, raw?: string | null) {
   if (img.dataset.fallback === "done") return;
   if (img.dataset.fallback === "google") {

@@ -1,5 +1,6 @@
 import { supabaseServer } from "@/lib/supabase-server";
 import { fetchMetadata } from "@/lib/metadata";
+import { applyPendingProductLogo, isPendingProductLogo } from "@/lib/product-logo-server";
 
 export async function applyHopPayment(paymentData: {
   metadata?: Record<string, string | undefined>;
@@ -52,20 +53,30 @@ export async function applyHopPayment(paymentData: {
 
     const { error } = await supabaseServer.from("products").update(updatePayload).eq("id", existingProduct.id);
     if (error) throw error;
+    if (isPendingProductLogo(paymentData.metadata?.hopup_logo)) {
+      await applyPendingProductLogo(existingProduct.id, paymentData.metadata.hopup_logo);
+    }
     return { updated: true, id: existingProduct.id };
   }
 
-  const { error } = await supabaseServer.from("products").insert({
-    name: fetchedTitle || nameFallback || url,
-    description: fetchedDescription || "Freshly hopped product",
-    url,
-    category: category || "Other",
-    rank: 0,
-    clicks: 0,
-    price: bidAmount,
-    last_hopped_at: new Date().toISOString(),
-  });
+  const { data: created, error } = await supabaseServer
+    .from("products")
+    .insert({
+      name: fetchedTitle || nameFallback || url,
+      description: fetchedDescription || "Freshly hopped product",
+      url,
+      category: category || "Other",
+      rank: 0,
+      clicks: 0,
+      price: bidAmount,
+      last_hopped_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
 
   if (error) throw error;
-  return { updated: false };
+  if (created?.id && isPendingProductLogo(paymentData.metadata?.hopup_logo)) {
+    await applyPendingProductLogo(created.id, paymentData.metadata.hopup_logo);
+  }
+  return { updated: false, id: created?.id };
 }

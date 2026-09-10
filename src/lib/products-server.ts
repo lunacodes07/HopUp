@@ -6,11 +6,19 @@ export { findProductBySlug, withBoardRanks };
 
 export async function getRankedProducts(): Promise<Product[]> {
   try {
-    const { data, error } = await supabase
+    const withLogo = await supabase
       .from("products")
-      .select("id, name, description, category, clicks, price, url, created_at, last_hopped_at")
+      .select("id, name, description, category, clicks, price, url, logo_url, created_at, last_hopped_at")
       .order("price", { ascending: false })
       .order("created_at", { ascending: true });
+
+    const { data, error } = withLogo.error
+      ? await supabase
+          .from("products")
+          .select("id, name, description, category, clicks, price, url, created_at, last_hopped_at")
+          .order("price", { ascending: false })
+          .order("created_at", { ascending: true })
+      : withLogo;
 
     if (error) {
       console.error("Failed to load products:", error);

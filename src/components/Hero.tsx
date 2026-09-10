@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, Minus, Plus, Loader2, ChevronDown } from "lucide-react";
+import { ArrowRight, Minus, Plus, Loader2, ChevronDown, Upload, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 import { DEFAULT_MIN_BID, LOL_MIN_BID, minBidForUrl } from "@/lib/bid";
@@ -48,7 +48,9 @@ export default function Hero() {
   const [lockedMin, setLockedMin] = useState(0);
   const [leaderboardData, setLeaderboardData] = useState<Product[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const urlFloor = useMemo(() => minBidForUrl(url), [url]);
   const minBid = Math.max(urlFloor, lockedMin);
@@ -156,6 +158,7 @@ export default function Hero() {
           bidAmount,
           category,
           nameFallback,
+          ...(logoDataUrl ? { logoDataUrl } : {}),
         }),
       });
 
@@ -498,7 +501,74 @@ export default function Hero() {
             </button>
           </div>
 
-          <p className="mt-3 text-sm text-secondary text-center md:text-left">
+          <div className="mt-3 flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/svg+xml,image/webp"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                try {
+                  const objectUrl = URL.createObjectURL(file);
+                  try {
+                    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+                      const el = new Image();
+                      el.onload = () => resolve(el);
+                      el.onerror = () => reject(new Error("Could not read that image"));
+                      el.src = objectUrl;
+                    });
+                    const size = 512;
+                    const pad = 48;
+                    const canvas = document.createElement("canvas");
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext("2d")!;
+                    const scale = Math.min((size - pad * 2) / img.width, (size - pad * 2) / img.height);
+                    ctx.drawImage(img, (size - img.width * scale) / 2, (size - img.height * scale) / 2, img.width * scale, img.height * scale);
+                    setLogoDataUrl(canvas.toDataURL("image/png"));
+                  } finally {
+                    URL.revokeObjectURL(objectUrl);
+                  }
+                } catch {
+                  setLogoDataUrl(null);
+                }
+              }}
+            />
+            {logoDataUrl ? (
+              <span className="inline-flex items-center gap-2 self-center md:self-auto">
+                <img src={logoDataUrl} alt="" className="w-7 h-7 rounded-md border border-border/50 bg-white object-contain" />
+                <button
+                  type="button"
+                  onClick={() => logoInputRef.current?.click()}
+                  className="text-[12px] font-semibold text-foreground hover:text-accent-dark"
+                >
+                  Replace logo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLogoDataUrl(null)}
+                  aria-label="Remove uploaded logo"
+                  className="text-secondary hover:text-foreground"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                className="inline-flex items-center justify-center gap-1.5 self-center md:self-auto text-[12px] font-semibold text-secondary hover:text-foreground transition-colors"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                Upload logo
+              </button>
+            )}
+          </div>
+
+          <p className="mt-2 text-sm text-secondary text-center md:text-left">
             {wouldTakeHof ? (
               <>
                 <span className="font-semibold text-foreground">
