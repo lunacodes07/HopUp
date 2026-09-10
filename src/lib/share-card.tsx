@@ -279,11 +279,20 @@ async function uploadedLogoDataUri(opts: {
   let productId = opts.productId || null;
   let logoUrl = opts.logoUrl || null;
 
-  if (!productId) {
+  if (productId && !logoUrl) {
+    const { data } = await supabaseServer
+      .from("products")
+      .select("logo_url")
+      .eq("id", productId)
+      .maybeSingle();
+    logoUrl = data?.logo_url || null;
+  } else if (!productId) {
     const row = await listingLogoRow(opts.pageUrl);
     productId = row?.id || null;
     logoUrl = logoUrl || row?.logo_url || null;
   }
+
+  if (!logoUrl) return null;
 
   if (productId) {
     const stored = await getStoredProductLogo(productId);

@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getStoredProductLogo } from "@/lib/product-logo-server";
 import { isSafePublicUrl, resolveLogo } from "@/lib/resolve-logo";
 
+export const dynamic = "force-dynamic";
+
+const LOGO_CACHE = "public, max-age=60, must-revalidate";
+
 function hostnameOf(raw: string): string | null {
   try {
     return new URL(raw.startsWith("http") ? raw : `https://${raw}`).hostname.toLowerCase();
@@ -22,7 +26,7 @@ export async function GET(request: Request) {
       return new NextResponse(stored.body, {
         headers: {
           "Content-Type": stored.type,
-          "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
+          "Cache-Control": LOGO_CACHE,
         },
       });
     }
@@ -40,7 +44,7 @@ export async function GET(request: Request) {
   return new NextResponse(image.body, {
     headers: {
       "Content-Type": image.type,
-      "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+      "Cache-Control": LOGO_CACHE,
     },
   });
 }

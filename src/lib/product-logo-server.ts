@@ -149,10 +149,31 @@ export async function applyPendingProductLogo(productId: string, pendingPath: st
   await supabaseServer.storage.from(BUCKET).remove([pendingPath]);
 }
 
+export async function productHasUploadedLogo(productId: string): Promise<boolean> {
+  if (!isProductId(productId)) return false;
+  const { data } = await supabaseServer
+    .from("products")
+    .select("logo_url")
+    .eq("id", productId)
+    .maybeSingle();
+  return Boolean(data?.logo_url);
+}
+
+export async function isCurrentProductLogoUrl(href: string): Promise<boolean> {
+  if (!isStoredProductLogoUrl(href)) return false;
+  const { data } = await supabaseServer
+    .from("products")
+    .select("id")
+    .eq("logo_url", href)
+    .limit(1);
+  return Boolean(data?.[0]);
+}
+
 export async function getStoredProductLogo(
   productId: string
 ): Promise<{ body: Blob; type: string } | null> {
   if (!isProductId(productId)) return null;
+  if (!(await productHasUploadedLogo(productId))) return null;
 
   for (const ext of EXTS) {
     const { data, error } = await supabaseServer.storage.from(BUCKET).download(objectPath(productId, ext));
