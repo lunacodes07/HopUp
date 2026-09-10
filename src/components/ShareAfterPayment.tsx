@@ -34,7 +34,7 @@ async function lookupProduct(hopUrl: string, seeded: Product[]) {
 
   const { data, error } = await supabase
     .from("products")
-    .select("id, name, description, category, clicks, price, url, created_at, last_hopped_at")
+    .select("id, name, description, category, clicks, price, url, logo_url, created_at, last_hopped_at")
     .order("price", { ascending: false })
     .order("created_at", { ascending: true });
 

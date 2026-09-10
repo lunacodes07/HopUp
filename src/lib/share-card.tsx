@@ -1,8 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { getStoredProductLogo, isStoredProductLogoUrl } from "@/lib/product-logo-server";
 import { rasterLogoDataUri } from "@/lib/resolve-logo";
 import { rankLabel } from "@/lib/share";
+import { supabaseServer } from "@/lib/supabase-server";
 
 export const SHARE_CARD_SIZE = { width: 1200, height: 630 };
 
@@ -12,6 +14,8 @@ export type ShareCardInput = {
   price: number;
   host?: string | null;
   pageUrl?: string | null;
+  productId?: string | null;
+  logoUrl?: string | null;
   kind?: "hop" | "sponsored";
 };
 
@@ -250,13 +254,68 @@ export function shareCardElement(card: ShareCardRender) {
   );
 }
 
+async function blobToDataUri(body: Blob, type: string): Promise<string | null> {
+  const bytes = Buffer.from(await body.arrayBuffer());
+  if (bytes.length < 32) return null;
+  return `data:${type.split(";")[0] || "image/png"};base64,${bytes.toString("base64")}`;
+}
+
+async function listingLogoRow(pageUrl?: string | null) {
+  if (!pageUrl) return null;
+  const { data } = await supabaseServer
+    .from("products")
+    .select("id, logo_url")
+    .eq("url", pageUrl)
+    .limit(1);
+  return data?.[0] ?? null;
+}
+
+/** Uploaded listing mark when present; otherwise null so the favicon path can run. */
+async function uploadedLogoDataUri(opts: {
+  productId?: string | null;
+  logoUrl?: string | null;
+  pageUrl?: string | null;
+}): Promise<string | null> {
+  let productId = opts.productId || null;
+  let logoUrl = opts.logoUrl || null;
+
+  if (!productId) {
+    const row = await listingLogoRow(opts.pageUrl);
+    productId = row?.id || null;
+    logoUrl = logoUrl || row?.logo_url || null;
+  }
+
+  if (productId) {
+    const stored = await getStoredProductLogo(productId);
+    if (stored) return blobToDataUri(stored.body, stored.type);
+  }
+
+  if (logoUrl && isStoredProductLogoUrl(logoUrl)) {
+    try {
+      const res = await fetch(logoUrl);
+      if (!res.ok) return null;
+      return blobToDataUri(await res.blob(), res.headers.get("content-type") || "image/png");
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 export async function shareCardImage(card: ShareCardInput) {
   const pageUrl = card.pageUrl || (card.host ? `https://${card.host}` : null);
-  const [loaded, brandLogo, siteLogo] = await Promise.all([
+  const [loaded, brandLogo, uploadedLogo] = await Promise.all([
     fonts(),
     hopupLogo().catch(() => null),
-    rasterLogoDataUri(pageUrl).catch(() => null),
+    uploadedLogoDataUri({
+      productId: card.productId,
+      logoUrl: card.logoUrl,
+      pageUrl,
+    }).catch(() => null),
   ]);
+  const siteLogo =
+    uploadedLogo ?? (await rasterLogoDataUri(pageUrl).catch(() => null));
   const render = (logoSrc: string | null) =>
     new ImageResponse(shareCardElement({ ...card, logoSrc, hopupLogoSrc: brandLogo }), {
       ...SHARE_CARD_SIZE,

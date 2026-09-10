@@ -23,5 +23,7 @@ export default async function ListingCard({ params }: ImageProps) {
     price: product?.price || 2,
     host,
     pageUrl: product?.url || (host ? `https://${host}` : null),
+    productId: product?.id,
+    logoUrl: product?.logo_url,
   });
 }

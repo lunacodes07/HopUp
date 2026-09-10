@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { displayHost } from "@/lib/product-path";
+import { isProductId } from "@/lib/product-logo-server";
 import { shareCardImage } from "@/lib/share-card";
 
 export const revalidate = 60;
@@ -16,6 +17,7 @@ export async function GET(request: Request) {
   const pageUrl = clip(params.get("url"), 180);
   const host = displayHost(clip(params.get("host"), 80) || pageUrl);
   const kind = params.get("kind") === "sponsored" ? "sponsored" : "hop";
+  const productId = clip(params.get("id"), 36);
 
   try {
     return shareCardImage({
@@ -24,6 +26,7 @@ export async function GET(request: Request) {
       price: Number.isFinite(price) && price > 0 ? Math.round(price) : 2,
       host,
       pageUrl: pageUrl || (host ? `https://${host}` : null),
+      productId: isProductId(productId) ? productId : null,
       kind,
     });
   } catch (err) {

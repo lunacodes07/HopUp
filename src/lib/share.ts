@@ -7,6 +7,7 @@ export type SharePayload = {
   rank: number;
   price: number;
   url?: string;
+  id?: string;
   kind?: ShareKind;
 };
 
@@ -57,6 +58,7 @@ export function shareImagePath(payload: SharePayload) {
     kind: payload.kind || "hop",
   });
   if (payload.url) params.set("url", payload.url);
+  if (payload.id) params.set("id", payload.id);
   return `/api/og?${params.toString()}`;
 }
 
@@ -66,6 +68,7 @@ export function shareFromProduct(product: Product, kind: ShareKind = "hop"): Sha
     rank: product.rank,
     price: product.price,
     url: product.url,
+    id: product.id,
     kind,
   };
 }
