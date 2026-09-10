@@ -23,7 +23,7 @@ export function middleware(request: NextRequest) {
   if (
     process.env.NODE_ENV === "production" &&
     !process.env.HOPUP_ADMIN_SECRET &&
-    (path === "/admin" || path.startsWith("/admin/"))
+    (path === "/admin/hop/me" || path.startsWith("/admin/hop/me/"))
   ) {
     return new NextResponse("Not Found", { status: 404 });
   }
