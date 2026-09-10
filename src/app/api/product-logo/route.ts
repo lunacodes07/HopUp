@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { isStoredProductLogoUrl } from "@/lib/product-logo-server";
+import { isCurrentProductLogoUrl } from "@/lib/product-logo-server";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const raw = new URL(request.url).searchParams.get("u") || "";
-  if (!isStoredProductLogoUrl(raw)) {
+  if (!(await isCurrentProductLogoUrl(raw))) {
     return NextResponse.redirect(new URL("/globe.svg", request.url));
   }
 
@@ -16,7 +18,7 @@ export async function GET(request: Request) {
     return new NextResponse(image.body, {
       headers: {
         "Content-Type": image.headers.get("content-type") || "image/png",
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
+        "Cache-Control": "public, max-age=60, must-revalidate",
       },
     });
   } catch {

@@ -37,9 +37,7 @@ export function getProductLogoUrl(product: {
     }
     return product.logo_url;
   }
-  const proxied = getProxiedLogoUrl(product.url);
-  if (!product.id || proxied === "/globe.svg") return proxied;
-  return `${proxied}&id=${encodeURIComponent(product.id)}`;
+  return getProxiedLogoUrl(product.url);
 }
 
 export function handleLogoError(img: HTMLImageElement, raw?: string | null) {
