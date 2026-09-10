@@ -1,6 +1,6 @@
 export const PRODUCT_CATEGORIES = [
   { value: "DevTools", label: "Developer Tools" },
-  { value: "AI / Builders", label: "AI / Builders" },
+  { value: "AI tools", label: "AI tools" },
   { value: "AI Agents", label: "AI Agents" },
   { value: "Marketing", label: "Marketing" },
   { value: "SEO", label: "SEO" },
