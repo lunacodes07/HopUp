@@ -7,6 +7,7 @@ export type Product = {
   clicks: number;
   price: number;
   url?: string;
+  logo_url?: string | null;
   created_at?: string;
   last_hopped_at?: string;
 };

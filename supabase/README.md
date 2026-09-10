@@ -20,6 +20,7 @@ RPCs (not tables): `increment_clicks`, `increment_page_view`, `increment_sponsor
 3. `creators.sql` — creators + referral_sales (see `CREATORS.md`)
 4. `stanley_slots.sql` — Stanley cup spots + referral kind `stanley`
 5. `stanley_slots_logo.sql` — optional uploaded logo on a Stanley spot + public `stanley-logos` bucket
+6. `products_logo.sql` — optional uploaded logo on a leaderboard listing + public `product-logos` bucket
 
 Do not paste `schema.sql` into a database that already has these tables. It is the original create script, not a migration.
 

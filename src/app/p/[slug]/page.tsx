@@ -5,7 +5,7 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import VisitSiteButton from "@/components/VisitSiteButton";
-import { getProxiedLogoUrl } from "@/lib/logo";
+import { getProductLogoUrl } from "@/lib/logo";
 import { displayHost, productPath, productSlug, toExternalUrl } from "@/lib/product-path";
 import { findProductBySlug, getRankedProducts, withBoardRanks } from "@/lib/products-server";
 import ShareListingButton from "@/components/ShareListingButton";
@@ -111,7 +111,7 @@ export default async function ProductListingPage({ params }: PageProps) {
     description: product.description || undefined,
     url: href || undefined,
     applicationCategory: product.category || undefined,
-    image: href ? `${SITE_URL}${getProxiedLogoUrl(product.url)}` : undefined,
+    image: href ? `${SITE_URL}${getProductLogoUrl(product)}` : undefined,
     offers: {
       "@type": "Offer",
       price: product.price,
@@ -144,7 +144,7 @@ export default async function ProductListingPage({ params }: PageProps) {
             <div className="flex items-start gap-4 md:gap-5">
               <div className="relative shrink-0 w-16 h-16 md:w-[72px] md:h-[72px] rounded-2xl overflow-hidden bg-muted border border-border/50 shadow-sm">
                 <img
-                  src={getProxiedLogoUrl(product.url)}
+                  src={getProductLogoUrl(product)}
                   alt={`${product.name} logo`}
                   className="absolute inset-0 w-full h-full object-cover bg-white"
                 />
@@ -253,7 +253,7 @@ export default async function ProductListingPage({ params }: PageProps) {
                       </span>
                       <div className="relative shrink-0 w-9 h-9 rounded-lg overflow-hidden bg-muted border border-border/40">
                         <img
-                          src={getProxiedLogoUrl(item.url)}
+                          src={getProductLogoUrl(item)}
                           alt=""
                           className="absolute inset-0 w-full h-full object-cover bg-white"
                         />

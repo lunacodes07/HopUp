@@ -48,6 +48,43 @@ export function stanleyRaised(filledSlots: Iterable<number>): number {
   return total;
 }
 
+/* ------------------------------------------------------------------ */
+/* Brand My Backpack — 14 spots across 6 zones                         */
+/* ------------------------------------------------------------------ */
+
+export const BACKPACK_SLOT_COUNT = 14;
+
+export type BackpackZone = {
+  label: string;
+  hint: string;
+  slots: number[];
+  price: number;
+};
+
+export const BACKPACK_ZONES: BackpackZone[] = [
+  { label: "Front", hint: "1 hero spot", slots: [1], price: 100 },
+  { label: "Front pocket", hint: "side by side, below the zip", slots: [2, 3], price: 75 },
+  { label: "Left side", hint: "stacked", slots: [4, 5, 6], price: 40 },
+  { label: "Right side", hint: "stacked", slots: [7, 8, 9], price: 40 },
+  { label: "Top", hint: "full area around the handle", slots: [10], price: 50 },
+  { label: "Inside panel", hint: "hidden when I wear it", slots: [11, 12, 13, 14], price: 30 },
+];
+
+export function backpackSlotPrice(slotNumber: number): number {
+  if (slotNumber === 1) return 100;
+  if (slotNumber <= 3) return 75;
+  if (slotNumber <= 9) return 40;
+  if (slotNumber === 10) return 50;
+  return 30;
+}
+
+/** $660 if every spot on the bag is claimed. */
+export function backpackCapacity(): number {
+  let total = 0;
+  for (let n = 1; n <= BACKPACK_SLOT_COUNT; n++) total += backpackSlotPrice(n);
+  return total;
+}
+
 /**
  * Registry for every Brand My Stuff experience.
  * To launch a new object: add an entry here with status "live"
@@ -70,9 +107,9 @@ export const BRAND_OBJECTS: BrandObject[] = [
     item: "Backpack",
     tagline: "Patch your brand on the daily carry.",
     status: "soon",
-    slots: 6,
-    price: SLOT_PRICE,
-    tint: "#8FA98F",
+    slots: BACKPACK_SLOT_COUNT,
+    price: 30,
+    tint: "#9EB8D4",
   },
   {
     slug: "brandmylaptop",
