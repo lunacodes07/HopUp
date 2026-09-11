@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import LiveLeaderboard from "@/components/LiveLeaderboard";
+import StanleyHomeTeaser from "@/components/StanleyHomeTeaser";
 import WhyFounders from "@/components/WhyFounders";
 import Pricing from "@/components/Pricing";
 import Footer from "@/components/Footer";
@@ -26,6 +27,7 @@ export default function HomeView({
       <main className="flex flex-col flex-1 w-full relative">
         <Hero />
         <LiveLeaderboard page={page} boardMode={boardMode} initialProducts={products} />
+        {page === 1 && <StanleyHomeTeaser />}
         <WhyFounders />
         <Pricing />
       </main>
