@@ -11,9 +11,8 @@ import ObjectArt from "./ObjectArt";
 import { STANLEY_SLOT_COUNT } from "@/lib/brand-objects";
 import { getFormattedUrlInfo } from "@/lib/format-url";
 import { getProxiedLogoUrl } from "@/lib/logo";
-import { stanleyDisplayLogo } from "@/lib/stanley-slots";
+import { isValidStanleySlot, stanleyDisplayLogo, type StanleySlot } from "@/lib/stanley-slots";
 import { supabase } from "@/lib/supabase";
-import type { StanleySlot } from "@/lib/stanley-slots";
 
 /** Matches TUMBLER_PINK in TumblerViewer (kept literal so this file doesn't import the 3D bundle). */
 const PINK = "#F2AFC9";
@@ -103,14 +102,18 @@ function indexClaimed(rows: StanleySlot[]) {
 
 export default function StanleyExperience({
   initialSlots = [],
+  initialSlot,
 }: {
   initialSlots?: StanleySlot[];
+  initialSlot?: number;
 }) {
   const [claimedBySlot, setClaimedBySlot] = useState<Record<number, StanleySlot>>(() =>
     indexClaimed(initialSlots)
   );
   const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState(() => firstOpenSlot(indexClaimed(initialSlots)));
+  const [selectedSlot, setSelectedSlot] = useState(() =>
+    isValidStanleySlot(initialSlot) ? initialSlot : firstOpenSlot(indexClaimed(initialSlots))
+  );
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
   const [brandUrl, setBrandUrl] = useState("");
   const [fetchedLogo, setFetchedLogo] = useState<string | null>(null);

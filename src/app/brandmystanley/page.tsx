@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import StanleyExperience from "@/components/brand-my-stuff/StanleyExperience";
 import { getStanleySlots } from "@/lib/stanley-slots-server";
-import type { StanleySlot } from "@/lib/stanley-slots";
+import { isValidStanleySlot, type StanleySlot } from "@/lib/stanley-slots";
 import { SITE_URL } from "@/lib/site";
 
 export const revalidate = 60;
@@ -34,13 +34,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function BrandMyStanleyPage() {
+type PageProps = {
+  searchParams: Promise<{ slot?: string }>;
+};
+
+export default async function BrandMyStanleyPage({ searchParams }: PageProps) {
   const initialSlots: StanleySlot[] = await getStanleySlots();
+  const slot = Number((await searchParams).slot);
 
   return (
     <>
       <Navbar />
-      <StanleyExperience initialSlots={initialSlots} />
+      <StanleyExperience
+        initialSlots={initialSlots}
+        initialSlot={isValidStanleySlot(slot) ? slot : undefined}
+      />
       <Footer />
     </>
   );

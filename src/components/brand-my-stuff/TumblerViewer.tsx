@@ -526,6 +526,8 @@ export type TumblerViewerProps = {
   selectedSlot: number;
   onSelectSlot: (n: number) => void;
   onHoverSlot?: (n: number | null) => void;
+  /** Homepage teaser: no drag/zoom so the page can still scroll. */
+  compact?: boolean;
 };
 
 export default function TumblerViewer({
@@ -534,6 +536,7 @@ export default function TumblerViewer({
   selectedSlot,
   onSelectSlot,
   onHoverSlot,
+  compact = false,
 }: TumblerViewerProps) {
   const [autoRotate, setAutoRotate] = useState(true);
   const controlsRef = useRef<OrbitControlsImpl>(null);
@@ -557,10 +560,10 @@ export default function TumblerViewer({
   return (
     <Canvas
       shadows="percentage"
-      dpr={[1, 1.8]}
-      camera={{ position: [0, 2.6, 9.2], fov: 30 }}
+      dpr={compact ? [1, 1.4] : [1, 1.8]}
+      camera={{ position: [0, 2.55, compact ? 7.6 : 9.2], fov: compact ? 30 : 30 }}
       gl={{ antialias: true, alpha: true }}
-      style={{ touchAction: "none" }}
+      style={{ touchAction: compact ? "pan-y" : "none" }}
     >
       <ambientLight intensity={0.5} />
       <directionalLight
@@ -608,6 +611,8 @@ export default function TumblerViewer({
         makeDefault
         target={[0, 2.05, 0]}
         enablePan={false}
+        enableZoom={!compact}
+        enableRotate={!compact}
         enableDamping
         dampingFactor={0.08}
         minDistance={5.5}

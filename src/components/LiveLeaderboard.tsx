@@ -224,7 +224,7 @@ export default function LiveLeaderboard({
   };
 
   return (
-    <section id="leaderboard" className="w-full px-4 md:px-8 pt-2 pb-20 flex flex-col items-center">
+    <section id="leaderboard" className="w-full px-4 md:px-8 pt-2 pb-10 flex flex-col items-center">
       <div className="w-full max-w-[1000px]">
         {champion && (
           <div className="relative mb-5">
