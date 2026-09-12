@@ -46,6 +46,7 @@ export default function Hero() {
   const [category, setCategory] = useState<string>(DEFAULT_CATEGORY);
   const [bidAmount, setBidAmount] = useState(DEFAULT_MIN_BID);
   const [lockedMin, setLockedMin] = useState(0);
+  const [claimingHof, setClaimingHof] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState<Product[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
@@ -55,9 +56,10 @@ export default function Hero() {
   const urlFloor = useMemo(() => minBidForUrl(url), [url]);
   const minBid = Math.max(urlFloor, lockedMin);
 
-  const applyBid = (amount: number, options?: { lockMin?: number; rawUrl?: string }) => {
+  const applyBid = (amount: number, options?: { lockMin?: number; rawUrl?: string; hof?: boolean }) => {
     const floorFromUrl = minBidForUrl(options?.rawUrl ?? url);
     const lock = options?.lockMin ?? 0;
+    setClaimingHof(Boolean(options?.hof));
     setLockedMin(lock);
     setBidAmount(Math.max(floorFromUrl, lock, amount));
   };
@@ -105,6 +107,7 @@ export default function Hero() {
         applyBid(e.detail.price, {
           lockMin: e.detail.lockMin ? e.detail.price : 0,
           rawUrl: nextUrl,
+          hof: Boolean(e.detail.lockMin),
         });
       } else if (nextUrl) {
         applyBid(minBidForUrl(nextUrl), { rawUrl: nextUrl });
@@ -295,12 +298,33 @@ export default function Hero() {
     return Math.max(urlFloor, topPrice + 1 - currentPrice);
   }, [recentBoard, activeBoard, url, urlFloor]);
 
-  const projectedTotal = useMemo(() => {
-    if (!url.trim()) return bidAmount;
+  const matchedListing = useMemo(() => {
+    if (!url.trim()) return null;
     const { finalUrl } = getFormattedUrlInfo(url);
-    const existing = leaderboardData.find((p) => matchesUrl(p.url, finalUrl));
-    return existing ? existing.price + bidAmount : bidAmount;
-  }, [bidAmount, url, leaderboardData]);
+    return leaderboardData.find((p) => matchesUrl(p.url, finalUrl)) ?? null;
+  }, [url, leaderboardData]);
+
+  const rank1 = activeBoard[0] ?? null;
+  const isBoardRank1 = Boolean(matchedListing && rank1 && matchedListing.id === rank1.id);
+
+  const amountToTakeHof = useMemo(() => {
+    if (!champion) return urlFloor;
+    return Math.max(urlFloor, hallOfFameClaimPrice(champion.price) - (matchedListing?.price ?? 0));
+  }, [champion, matchedListing, urlFloor]);
+
+  const showHofTarget = Boolean(champion && (claimingHof || isBoardRank1));
+
+  // After "claim HOF", hops on an existing listing only need the remaining bump.
+  useEffect(() => {
+    if (!claimingHof || !champion) return;
+    setLockedMin(amountToTakeHof);
+    setBidAmount(amountToTakeHof);
+  }, [claimingHof, matchedListing?.id, amountToTakeHof, champion]);
+
+  const projectedTotal = useMemo(() => {
+    if (!matchedListing) return bidAmount;
+    return matchedListing.price + bidAmount;
+  }, [bidAmount, matchedListing]);
 
   const wouldTakeHof = Boolean(champion && projectedTotal > champion.price);
 
@@ -358,13 +382,25 @@ export default function Hero() {
             <button
               type="button"
               onClick={() => {
-                applyBid(amountForRank1);
+                applyBid(
+                  showHofTarget ? amountToTakeHof : amountForRank1,
+                  showHofTarget ? { lockMin: amountToTakeHof, hof: true } : undefined
+                );
                 urlInputRef.current?.focus();
               }}
               className="text-[26px] md:text-[32px] font-semibold tracking-tight text-foreground leading-snug hover:opacity-80 transition-opacity"
             >
-              Claim Rank <span className="text-accent">#1</span> for{" "}
-              <span className="text-accent tabular-nums">${amountForRank1}</span>
+              {showHofTarget ? (
+                <>
+                  Claim <span className="text-accent">Hall of Fame</span> for{" "}
+                  <span className="text-accent tabular-nums">${amountToTakeHof}</span>
+                </>
+              ) : (
+                <>
+                  Claim Rank <span className="text-accent">#1</span> for{" "}
+                  <span className="text-accent tabular-nums">${amountForRank1}</span>
+                </>
+              )}
             </button>
             <p className="text-sm md:text-base text-secondary mt-1.5">
               {rankForTwoRecent === 1 ? (
@@ -569,12 +605,48 @@ export default function Hero() {
           </div>
 
           <p className="mt-2 text-sm text-secondary text-center md:text-left">
-            {wouldTakeHof ? (
+            {showHofTarget && wouldTakeHof ? (
+              <span className="font-semibold text-foreground">
+                Takes <span className="text-accent">Hall of Fame</span>
+              </span>
+            ) : showHofTarget ? (
               <>
-                <span className="font-semibold text-foreground">
-                  Takes <span className="text-accent">Hall of Fame</span>
+                {isBoardRank1 && (
+                  <>
+                    <span className="font-semibold text-foreground">You&apos;re #1</span>
+                    {" · "}
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    applyBid(amountToTakeHof, { lockMin: amountToTakeHof, hof: true });
+                    urlInputRef.current?.focus();
+                  }}
+                  className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
+                >
+                  {matchedListing
+                    ? `$${amountToTakeHof} more to claim Hall of Fame`
+                    : `$${amountToTakeHof} to claim Hall of Fame`}
+                </button>
+              </>
+            ) : url.trim() && expectedRank > 1 ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    applyBid(amountForRank1);
+                    urlInputRef.current?.focus();
+                  }}
+                  className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
+                >
+                  {matchedListing
+                    ? `$${amountForRank1} more to take rank #1`
+                    : `Take rank #1 for $${amountForRank1}`}
+                </button>
+                <span className="text-secondary/70">
+                  {" · "}all time #{expectedRank}
                 </span>
-
               </>
             ) : (
               <>
@@ -593,7 +665,9 @@ export default function Hero() {
             {urlFloor === LOL_MIN_BID && (
               <span className="text-secondary/70">{" · "}$1 min for .lol</span>
             )}
-            {!wouldTakeHof && expectedRecentRank > 1 && amountForRecentRank1 < amountForRank1 && (
+            {!showHofTarget &&
+              expectedRecentRank > 1 &&
+              amountForRecentRank1 < amountForRank1 && (
               <>
                 {" · "}
                 <button
