@@ -169,6 +169,20 @@ export async function isCurrentProductLogoUrl(href: string): Promise<boolean> {
   return Boolean(data?.[0]);
 }
 
+/** Resolve a favicon once at hop time so later leaderboard views skip /api/logo. */
+export async function storeResolvedProductLogo(productId: string, pageUrl: string): Promise<void> {
+  try {
+    if (!isProductId(productId)) return;
+    if (await productHasUploadedLogo(productId)) return;
+    const { rasterLogoDataUri } = await import("@/lib/resolve-logo");
+    const uri = await rasterLogoDataUri(pageUrl);
+    if (!uri) return;
+    await storeProductLogo(productId, uri);
+  } catch (error) {
+    console.error("Resolved product logo persist failed:", error);
+  }
+}
+
 export async function getStoredProductLogo(
   productId: string
 ): Promise<{ body: Blob; type: string } | null> {
