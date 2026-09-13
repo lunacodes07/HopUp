@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
     const bytes = Buffer.from(await image.arrayBuffer());
     const fixed = unpadProductLogoBytes(bytes);
-    const body = fixed ?? bytes;
+    const body = new Uint8Array(fixed ?? bytes);
 
     return new NextResponse(body, {
       headers: {
