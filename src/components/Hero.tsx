@@ -557,13 +557,18 @@ export default function Hero() {
                       el.src = objectUrl;
                     });
                     const size = 512;
-                    const pad = 48;
                     const canvas = document.createElement("canvas");
                     canvas.width = size;
                     canvas.height = size;
                     const ctx = canvas.getContext("2d")!;
-                    const scale = Math.min((size - pad * 2) / img.width, (size - pad * 2) / img.height);
-                    ctx.drawImage(img, (size - img.width * scale) / 2, (size - img.height * scale) / 2, img.width * scale, img.height * scale);
+                    const scale = Math.max(size / img.width, size / img.height);
+                    ctx.drawImage(
+                      img,
+                      (size - img.width * scale) / 2,
+                      (size - img.height * scale) / 2,
+                      img.width * scale,
+                      img.height * scale
+                    );
                     setLogoDataUrl(canvas.toDataURL("image/png"));
                   } finally {
                     URL.revokeObjectURL(objectUrl);

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isCurrentProductLogoUrl } from "@/lib/product-logo-server";
+import { unpadProductLogoBytes } from "@/lib/unpad-product-logo";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +16,13 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL("/globe.svg", request.url));
     }
 
-    return new NextResponse(image.body, {
+    const bytes = Buffer.from(await image.arrayBuffer());
+    const fixed = unpadProductLogoBytes(bytes);
+    const body = new Uint8Array(fixed ?? bytes);
+
+    return new NextResponse(body, {
       headers: {
-        "Content-Type": image.headers.get("content-type") || "image/png",
+        "Content-Type": fixed ? "image/png" : image.headers.get("content-type") || "image/png",
         "Cache-Control": "public, max-age=60, must-revalidate",
       },
     });

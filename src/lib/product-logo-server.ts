@@ -178,8 +178,14 @@ export async function getStoredProductLogo(
   for (const ext of EXTS) {
     const { data, error } = await supabaseServer.storage.from(BUCKET).download(objectPath(productId, ext));
     if (error || !data) continue;
+    const bytes = Buffer.from(await data.arrayBuffer());
+    const { unpadProductLogoBytes } = await import("@/lib/unpad-product-logo");
+    const fixed = unpadProductLogoBytes(bytes);
+    if (fixed) {
+      return { body: new Blob([new Uint8Array(fixed)]), type: "image/png" };
+    }
     return {
-      body: data,
+      body: new Blob([new Uint8Array(bytes)]),
       type: ext === "jpg" ? "image/jpeg" : ext === "webp" ? "image/webp" : "image/png",
     };
   }
