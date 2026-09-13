@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { getStoredProductLogo } from "@/lib/product-logo-server";
 import { isSafePublicUrl, resolveLogo } from "@/lib/resolve-logo";
+import { logoHitHeaders, logoMissHeaders } from "@/lib/logo-cache-headers";
 
 export const dynamic = "force-dynamic";
-
-const LOGO_CACHE = "public, max-age=60, must-revalidate";
 
 function hostnameOf(raw: string): string | null {
   try {
@@ -12,6 +11,15 @@ function hostnameOf(raw: string): string | null {
   } catch {
     return null;
   }
+}
+
+function globe(request: Request) {
+  const response = NextResponse.redirect(new URL("/globe.svg", request.url));
+  const miss = logoMissHeaders();
+  for (const [key, value] of Object.entries(miss)) {
+    response.headers.set(key, value);
+  }
+  return response;
 }
 
 export async function GET(request: Request) {
@@ -24,27 +32,21 @@ export async function GET(request: Request) {
     const stored = await getStoredProductLogo(productId);
     if (stored) {
       return new NextResponse(stored.body, {
-        headers: {
-          "Content-Type": stored.type,
-          "Cache-Control": LOGO_CACHE,
-        },
+        headers: logoHitHeaders(stored.type),
       });
     }
   }
 
   if (!raw || !host || !isSafePublicUrl(raw)) {
-    return NextResponse.redirect(new URL("/globe.svg", request.url));
+    return globe(request);
   }
 
   const image = await resolveLogo(raw);
   if (!image) {
-    return NextResponse.redirect(new URL("/globe.svg", request.url));
+    return globe(request);
   }
 
-  return new NextResponse(image.body, {
-    headers: {
-      "Content-Type": image.type,
-      "Cache-Control": LOGO_CACHE,
-    },
+  return new NextResponse(new Uint8Array(image.body), {
+    headers: logoHitHeaders(image.type),
   });
 }

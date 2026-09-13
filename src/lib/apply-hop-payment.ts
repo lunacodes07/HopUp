@@ -1,6 +1,6 @@
 import { supabaseServer } from "@/lib/supabase-server";
 import { fetchMetadata } from "@/lib/metadata";
-import { applyPendingProductLogo, isPendingProductLogo } from "@/lib/product-logo-server";
+import { applyPendingProductLogo, isPendingProductLogo, storeResolvedProductLogo } from "@/lib/product-logo-server";
 
 export async function applyHopPayment(paymentData: {
   metadata?: Record<string, string | undefined>;
@@ -55,6 +55,8 @@ export async function applyHopPayment(paymentData: {
     if (error) throw error;
     if (isPendingProductLogo(paymentData.metadata?.hopup_logo)) {
       await applyPendingProductLogo(existingProduct.id, paymentData.metadata.hopup_logo);
+    } else if (!existingProduct.logo_url) {
+      await storeResolvedProductLogo(existingProduct.id, url);
     }
     return { updated: true, id: existingProduct.id };
   }
@@ -77,6 +79,8 @@ export async function applyHopPayment(paymentData: {
   if (error) throw error;
   if (created?.id && isPendingProductLogo(paymentData.metadata?.hopup_logo)) {
     await applyPendingProductLogo(created.id, paymentData.metadata.hopup_logo);
+  } else if (created?.id) {
+    await storeResolvedProductLogo(created.id, url);
   }
   return { updated: false, id: created?.id };
 }
