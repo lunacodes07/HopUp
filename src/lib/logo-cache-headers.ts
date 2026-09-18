@@ -1,10 +1,7 @@
 /** Browser + shared caches. Logos barely change; 60s was forcing constant re-resolves. */
 export const LOGO_CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800";
 
-/**
- * Next.js `force-dynamic` can overwrite `Cache-Control` with `no-store`.
- * Vercel still honors these for the CDN, so Fluid CPU is not spent on every img hit.
- */
+/** Vercel honors these even when Next rewrites Cache-Control. */
 export const LOGO_CDN_CACHE_CONTROL = "public, s-maxage=86400, stale-while-revalidate=604800";
 
 export const LOGO_MISS_CACHE_CONTROL = "public, max-age=300, s-maxage=300, stale-while-revalidate=3600";

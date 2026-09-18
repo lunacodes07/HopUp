@@ -32,12 +32,18 @@ export function getProductLogoUrl(product: {
   logo_url?: string | null;
 }): string {
   if (product.logo_url) {
-    if (product.logo_url.includes("/product-logos/")) {
-      return `/api/product-logo?u=${encodeURIComponent(product.logo_url)}`;
-    }
     return product.logo_url;
   }
-  return getProxiedLogoUrl(product.url);
+  if (!product.url) return "/globe.svg";
+  try {
+    const href = product.url.startsWith("http") ? product.url : `https://${product.url}`;
+    new URL(href);
+    const params = new URLSearchParams({ url: href });
+    if (product.id) params.set("id", product.id);
+    return `/api/logo?${params}`;
+  } catch {
+    return "/globe.svg";
+  }
 }
 
 export function handleLogoError(img: HTMLImageElement, raw?: string | null) {
