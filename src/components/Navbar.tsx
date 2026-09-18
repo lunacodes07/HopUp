@@ -37,7 +37,7 @@ export default function Navbar() {
         {/* Logo */}
         <div className="flex-1">
           <Link href="/" className="text-lg md:text-xl font-semibold tracking-tight z-50 flex items-center gap-2 group">
-            <img src="/hoplogo.png" alt="HopUp Logo" className="w-8 h-8 md:w-9 md:h-9 object-contain group-hover:scale-105 transition-transform" />
+            <img src="/logo.png" alt="HopUp Logo" className="w-8 h-8 md:w-9 md:h-9 object-contain group-hover:scale-105 transition-transform" />
             <div className="flex items-baseline">
               <span className="text-foreground">HopUp.</span>
               <span className="text-accent">lol</span>

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     url: "https://www.hopup.lol",
     images: [
       {
-        url: "https://www.hopup.lol/og.png",
+        url: "https://www.hopup.lol/og.jpg",
         width: 1200,
         height: 630,
         alt: "HopUp",
@@ -31,11 +31,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "HopUp — Your Product Deserves a Better Spot",
     description: "List it. Hop up. Get noticed.",
-    images: ["https://www.hopup.lol/og.png"],
-  },
-
-  icons: {
-    icon: "/hoplogo.png",
+    images: ["https://www.hopup.lol/og.jpg"],
   },
 };
 

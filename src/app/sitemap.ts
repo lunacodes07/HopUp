@@ -5,13 +5,13 @@ import { productPath } from "@/lib/product-path";
 import { getRankedProducts } from "@/lib/products-server";
 import { SITE_URL } from "@/lib/site";
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: SITE_URL, lastModified: new Date(), changeFrequency: "hourly", priority: 1 },
-    { url: `${SITE_URL}/last-48-hours`, lastModified: new Date(), changeFrequency: "hourly", priority: 0.9 },
-    { url: `${SITE_URL}/p`, lastModified: new Date(), changeFrequency: "hourly", priority: 0.8 },
+    { url: SITE_URL, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
+    { url: `${SITE_URL}/last-48-hours`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/p`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/brandmystuff`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE_URL}/brandmystanley`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE_URL}/about`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
@@ -27,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       Array.from({ length: Math.max(0, pageCountForMode(mode, products) - 1) }, (_, i) => ({
         url: `${SITE_URL}${boardCanonicalPath(mode, i + 2)}`,
         lastModified: new Date(),
-        changeFrequency: "hourly" as const,
+        changeFrequency: "daily" as const,
         priority: 0.7,
       }))
     );

@@ -6,10 +6,10 @@ import { getStanleySlots } from "@/lib/stanley-slots-server";
 import { isValidStanleySlot, type StanleySlot } from "@/lib/stanley-slots";
 import { SITE_URL } from "@/lib/site";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 const STANLEY_OG = {
-  url: `${SITE_URL}/ogstanley.png`,
+  url: `${SITE_URL}/ogstanley.jpg`,
   width: 1200,
   height: 630,
   alt: "Brand My Stanley — HopUp",

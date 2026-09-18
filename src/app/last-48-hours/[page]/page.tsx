@@ -7,7 +7,7 @@ import {
   resolveBoardPage,
 } from "@/lib/board-page";
 
-export const revalidate = 60;
+export const revalidate = 300;
 export const dynamicParams = true;
 
 type PageProps = {

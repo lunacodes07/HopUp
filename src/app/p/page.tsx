@@ -3,7 +3,7 @@ import ListingsIndex from "@/components/ListingsIndex";
 import { getRankedProducts, withBoardRanks } from "@/lib/products-server";
 import { SITE_URL } from "@/lib/site";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "All listings — HopUp",
