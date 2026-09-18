@@ -23,7 +23,7 @@ function isStanleyStoredLogo(href?: string | null): boolean {
 
 export function stanleyDisplayLogo(row: Pick<StanleySlot, "url" | "logo_url">): string {
   if (row.logo_url && isStanleyStoredLogo(row.logo_url)) {
-    return `/api/stanley-logo?u=${encodeURIComponent(row.logo_url)}`;
+    return row.logo_url;
   }
   return getProxiedLogoUrl(row.url);
 }

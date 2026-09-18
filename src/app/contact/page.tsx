@@ -2,6 +2,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Mail, MessageSquare } from "lucide-react";
 
+export const dynamic = "force-static";
+
 export default function ContactPage() {
   return (
     <>

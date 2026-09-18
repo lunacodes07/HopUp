@@ -84,9 +84,20 @@ async function uploadProductLogo(productId: string, image: StoredImage): Promise
   if (!isProductId(productId)) throw new Error("Invalid product.");
   await ensureBucket();
 
-  const path = objectPath(productId, image.ext);
-  const { error } = await supabaseServer.storage.from(BUCKET).upload(path, image.bytes, {
-    contentType: image.contentType,
+  let upload = image;
+  try {
+    const { unpadProductLogoBytes } = await import("@/lib/unpad-product-logo");
+    const fixed = unpadProductLogoBytes(image.bytes);
+    if (fixed) {
+      upload = { bytes: fixed, contentType: "image/png", ext: "png" };
+    }
+  } catch {
+    upload = image;
+  }
+
+  const path = objectPath(productId, upload.ext);
+  const { error } = await supabaseServer.storage.from(BUCKET).upload(path, upload.bytes, {
+    contentType: upload.contentType,
     upsert: true,
   });
   if (error) {
@@ -94,7 +105,7 @@ async function uploadProductLogo(productId: string, image: StoredImage): Promise
     throw new Error("Could not save that logo. Try again.");
   }
 
-  await removeOtherExts(productId, image.ext);
+  await removeOtherExts(productId, upload.ext);
   const publicUrl = publicUrlForProductLogo(path);
   await saveProductLogoUrl(productId, publicUrl);
   return publicUrl;
@@ -193,11 +204,6 @@ export async function getStoredProductLogo(
     const { data, error } = await supabaseServer.storage.from(BUCKET).download(objectPath(productId, ext));
     if (error || !data) continue;
     const bytes = Buffer.from(await data.arrayBuffer());
-    const { unpadProductLogoBytes } = await import("@/lib/unpad-product-logo");
-    const fixed = unpadProductLogoBytes(bytes);
-    if (fixed) {
-      return { body: new Blob([new Uint8Array(fixed)]), type: "image/png" };
-    }
     return {
       body: new Blob([new Uint8Array(bytes)]),
       type: ext === "jpg" ? "image/jpeg" : ext === "webp" ? "image/webp" : "image/png",

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { isCurrentProductLogoUrl } from "@/lib/product-logo-server";
-import { unpadProductLogoBytes } from "@/lib/unpad-product-logo";
-import { logoHitHeaders, logoMissHeaders } from "@/lib/logo-cache-headers";
+import { isStoredProductLogoUrl } from "@/lib/product-logo-server";
+import { logoMissHeaders } from "@/lib/logo-cache-headers";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 function globe(request: Request) {
   const response = NextResponse.redirect(new URL("/globe.svg", request.url));
@@ -16,24 +15,13 @@ function globe(request: Request) {
 
 export async function GET(request: Request) {
   const raw = new URL(request.url).searchParams.get("u") || "";
-  if (!(await isCurrentProductLogoUrl(raw))) {
+  if (!isStoredProductLogoUrl(raw)) {
     return globe(request);
   }
 
-  try {
-    const image = await fetch(raw);
-    if (!image.ok) {
-      return globe(request);
-    }
-
-    const bytes = Buffer.from(await image.arrayBuffer());
-    const fixed = unpadProductLogoBytes(bytes);
-    const body = new Uint8Array(fixed ?? bytes);
-
-    return new NextResponse(body, {
-      headers: logoHitHeaders(fixed ? "image/png" : image.headers.get("content-type") || "image/png"),
-    });
-  } catch {
-    return globe(request);
-  }
+  const response = NextResponse.redirect(raw, 308);
+  response.headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+  response.headers.set("CDN-Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
+  response.headers.set("Vercel-CDN-Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
+  return response;
 }

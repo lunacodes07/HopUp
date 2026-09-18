@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { isStoredStanleyLogoUrl } from "@/lib/stanley-logo-server";
-import { logoHitHeaders, logoMissHeaders } from "@/lib/logo-cache-headers";
+import { logoMissHeaders } from "@/lib/logo-cache-headers";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 function globe(request: Request) {
   const response = NextResponse.redirect(new URL("/globe.svg", request.url));
@@ -19,16 +19,9 @@ export async function GET(request: Request) {
     return globe(request);
   }
 
-  try {
-    const image = await fetch(raw);
-    if (!image.ok) {
-      return globe(request);
-    }
-
-    return new NextResponse(image.body, {
-      headers: logoHitHeaders(image.headers.get("content-type") || "image/png"),
-    });
-  } catch {
-    return globe(request);
-  }
+  const response = NextResponse.redirect(raw, 308);
+  response.headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+  response.headers.set("CDN-Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
+  response.headers.set("Vercel-CDN-Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
+  return response;
 }

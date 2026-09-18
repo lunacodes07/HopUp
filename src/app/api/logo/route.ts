@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
-import { getStoredProductLogo } from "@/lib/product-logo-server";
+import {
+  getStoredProductLogo,
+  isProductId,
+  productHasUploadedLogo,
+  storeProductLogo,
+} from "@/lib/product-logo-server";
 import { isSafePublicUrl, resolveLogo } from "@/lib/resolve-logo";
 import { logoHitHeaders, logoMissHeaders } from "@/lib/logo-cache-headers";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 function hostnameOf(raw: string): string | null {
   try {
@@ -20,6 +25,18 @@ function globe(request: Request) {
     response.headers.set(key, value);
   }
   return response;
+}
+
+async function persistResolvedLogo(productId: string, image: { body: ArrayBuffer; type: string }) {
+  if (!isProductId(productId)) return;
+  if (await productHasUploadedLogo(productId)) return;
+  const type = image.type === "image/jpeg" || image.type === "image/jpg"
+    ? "image/jpeg"
+    : image.type === "image/webp"
+      ? "image/webp"
+      : "image/png";
+  const uri = `data:${type};base64,${Buffer.from(image.body).toString("base64")}`;
+  await storeProductLogo(productId, uri);
 }
 
 export async function GET(request: Request) {
@@ -44,6 +61,14 @@ export async function GET(request: Request) {
   const image = await resolveLogo(raw);
   if (!image) {
     return globe(request);
+  }
+
+  if (productId) {
+    try {
+      await persistResolvedLogo(productId, image);
+    } catch (error) {
+      console.error("Persist resolved logo failed:", error);
+    }
   }
 
   return new NextResponse(new Uint8Array(image.body), {
