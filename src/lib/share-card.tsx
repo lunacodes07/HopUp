@@ -52,7 +52,7 @@ async function fonts() {
 
 async function hopupLogo() {
   if (!hopupLogoData) {
-    const file = await readFile(join(process.cwd(), "public/hoplogo.png"));
+    const file = await readFile(join(process.cwd(), "public/logo.png"));
     hopupLogoData = `data:image/png;base64,${file.toString("base64")}`;
   }
   return hopupLogoData;

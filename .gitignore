@@ -42,3 +42,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .blender-scratch/
+
+# Brand My Backpack — local only, do not ship to GitHub / Vercel
+/public/brandmybackpack/
+/src/app/brandmybackpack/
+/src/components/brand-my-stuff/BackpackExperience.tsx
+/src/components/brand-my-stuff/BackpackViewer.tsx

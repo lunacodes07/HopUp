@@ -14,7 +14,7 @@ import { SITE_URL } from "@/lib/site";
 import { getTimeAgo } from "@/lib/time-ago";
 import type { Product } from "@/types";
 
-export const revalidate = 60;
+export const revalidate = 300;
 export const dynamicParams = true;
 
 type PageProps = {

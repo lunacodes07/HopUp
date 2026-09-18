@@ -3,7 +3,7 @@ import { displayHost } from "@/lib/product-path";
 import { isProductId } from "@/lib/product-logo-server";
 import { shareCardImage } from "@/lib/share-card";
 
-export const revalidate = 60;
+export const revalidate = 86400;
 
 function clip(value: string | null, max: number) {
   return (value || "").trim().slice(0, max);

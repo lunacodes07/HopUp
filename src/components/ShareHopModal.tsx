@@ -95,7 +95,7 @@ export default function ShareHopModal({
                   </p>
                 </div>
                 <p className="flex items-center gap-1.5 text-[12px] text-white/45">
-                  <img src="/hoplogo.png" alt="" className="w-4 h-4 object-contain" />
+                  <img src="/logo.png" alt="" className="w-4 h-4 object-contain" />
                   hopup.lol
                 </p>
               </div>
