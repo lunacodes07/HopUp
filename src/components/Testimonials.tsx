@@ -89,12 +89,12 @@ const TESTIMONIALS: Testimonial[] = [
     tilt: "rotate-2",
   },
   {
-    name: "Nina Okonkwo",
-    handle: "ninabuilds",
-    date: "Jul 22, 2026",
-    posted: "2026-07-22",
+    name: "Vlad Arbatov",
+    handle: "vladzima",
+    date: "Aug 25, 2026",
+    posted: "2026-08-25",
     comment:
-      "Clicked hop as a joke. Someone from a newsletter I actually read emailed the next day. $2 is cheaper than my coffee and louder than my last launch.",
+      "I will buy and brand anything Aloha says. She is definitely not holding me hostage or anything.",
     tint: "tint-bubblegum",
     hoppy: "wink",
     tilt: "-rotate-1",
