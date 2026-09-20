@@ -23,15 +23,13 @@ export default function Navbar() {
   }, []);
 
   return (
-    <div className="fixed top-3 left-0 right-0 z-50 flex justify-center px-4 md:px-8 pointer-events-none">
+    <div className="fixed top-3 left-0 right-0 z-50 flex justify-center px-4 md:px-8 lg:px-16 pointer-events-none">
       <motion.nav 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className={`w-full max-w-[1000px] pointer-events-auto rounded-full flex items-center justify-between px-4 md:px-5 py-2.5 transition-all duration-300 ${
-          scrolled
-            ? "bg-white/80 backdrop-blur-xl border border-white/50 shadow-sm"
-            : "bg-white/50 backdrop-blur-md border border-white/40"
+        className={`page-wide pointer-events-auto rounded-full flex items-center justify-between px-4 md:px-6 py-2.5 transition-all duration-300 ${
+          scrolled ? "glass-strong" : "glass"
         }`}
       >
         {/* Logo */}
@@ -110,7 +108,7 @@ export default function Navbar() {
                 router.push("/");
               }
             }}
-            className="group inline-flex items-center gap-1.5 bg-foreground text-background px-5 py-2 rounded-full text-sm font-semibold hover:bg-accent hover:text-foreground transition-colors"
+            className="group btn-primary inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold"
           >
               Hop your product
               <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
@@ -119,7 +117,7 @@ export default function Navbar() {
 
         <Link
           href="/brandmystanley"
-          className="md:hidden mr-1 inline-flex items-center gap-1 rounded-full border border-accent/30 bg-white/80 pl-1 pr-2 py-0.5 text-[11px] font-semibold text-foreground"
+          className="md:hidden mr-1 btn-glass inline-flex items-center gap-1 rounded-full pl-1 pr-2 py-0.5 text-[11px] font-semibold text-foreground"
         >
           <span className="relative overflow-hidden rounded-full bg-accent px-1 py-px text-[8px] font-bold uppercase tracking-[0.1em] text-white leading-none">
             New
@@ -133,7 +131,7 @@ export default function Navbar() {
 
         {/* Mobile Hamburger */}
         <button
-          className="md:hidden z-50 p-2 -mr-2 text-foreground bg-muted/50 rounded-full"
+          className="md:hidden z-50 p-2 -mr-2 text-foreground btn-glass rounded-full"
           onClick={toggleMenu}
           aria-label="Toggle Menu"
         >
@@ -148,7 +146,7 @@ export default function Navbar() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="absolute top-[110%] left-0 right-0 bg-white/95 backdrop-blur-xl border border-white/50 rounded-2xl p-5 shadow-lg flex flex-col items-center gap-4 md:hidden mx-0"
+              className="absolute top-[110%] left-0 right-0 glass-strong rounded-3xl p-5 flex flex-col items-center gap-4 md:hidden mx-0"
             >
               <Link
                 href="/#leaderboard"
@@ -204,7 +202,7 @@ export default function Navbar() {
                     router.push("/");
                   }
                 }}
-                className="inline-flex items-center justify-center gap-1.5 bg-foreground text-background px-5 py-2 rounded-full text-sm font-semibold"
+                className="btn-primary inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold"
               >
                 Hop your product
                 <ArrowRight className="w-3.5 h-3.5" />

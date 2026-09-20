@@ -16,8 +16,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const creator = await getCreatorBySlug((await params).slug);
   if (!creator) return { title: "HopUp" };
   return {
-    title: "HopUp — Your Product Deserves a Better Spot",
-    description: "List it. Hop up. Get noticed.",
+    title: "HopUp — Your Product Deserves More Eyes",
+    description: "A backlink on every listing. Pay once. Rank higher.",
     robots: { index: false, follow: true },
   };
 }

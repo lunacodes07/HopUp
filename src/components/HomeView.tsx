@@ -4,7 +4,7 @@ import Hero from "@/components/Hero";
 import LiveLeaderboard from "@/components/LiveLeaderboard";
 import StanleyHomeTeaser from "@/components/StanleyHomeTeaser";
 import WhyFounders from "@/components/WhyFounders";
-import Pricing from "@/components/Pricing";
+import Testimonials from "@/components/Testimonials";
 import Footer from "@/components/Footer";
 import ShareAfterPayment from "@/components/ShareAfterPayment";
 import type { BoardMode } from "@/lib/pagination";
@@ -29,7 +29,7 @@ export default function HomeView({
         <LiveLeaderboard page={page} boardMode={boardMode} initialProducts={products} />
         {page === 1 && <StanleyHomeTeaser />}
         <WhyFounders />
-        <Pricing />
+        <Testimonials />
       </main>
       <Footer />
       <Suspense fallback={null}>

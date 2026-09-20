@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useMemo, Fragment } from "react";
+import { Fragment, useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence, useSpring, useTransform } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, ArrowRight, Crown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
@@ -14,8 +14,12 @@ import { BOARD_FILTERS } from "@/lib/categories";
 import { LISTINGS_PER_PAGE, type BoardMode, boardCanonicalPath, boardPath } from "@/lib/pagination";
 import { productPath } from "@/lib/product-path";
 import { trackProductClick } from "@/lib/track-click";
+import { readVotedFromStorage, writeVotedToStorage } from "@/lib/upvotes";
 import Pagination from "./Pagination";
 import SponsoredSlots from "./SponsoredSlots";
+import LatestActivity from "./LatestActivity";
+import TopUpvoted from "./TopUpvoted";
+import UpvoteButton from "./UpvoteButton";
 
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
 
@@ -59,6 +63,7 @@ export default function LiveLeaderboard({
   const [now, setNow] = useState(() => Date.now());
   const [leaderboardData, setLeaderboardData] = useState<Product[]>(initialProducts);
   const [isLoading, setIsLoading] = useState(initialProducts.length === 0);
+  const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
 
   const ITEMS_PER_PAGE = LISTINGS_PER_PAGE;
   const currentPage = page;
@@ -66,6 +71,10 @@ export default function LiveLeaderboard({
   useEffect(() => {
     const tick = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(tick);
+  }, []);
+
+  useEffect(() => {
+    setVotedIds(new Set(readVotedFromStorage()));
   }, []);
 
   useEffect(() => {
@@ -158,36 +167,44 @@ export default function LiveLeaderboard({
   const latestActivity = useMemo(() => {
     return [...sourceBoard]
       .sort((a, b) => hoppedAt(b) - hoppedAt(a))
-      .slice(0, 3);
+      .slice(0, 5);
   }, [sourceBoard]);
 
-  const totalMoney = useMemo(
-    () => leaderboardData.reduce((sum, item) => sum + item.price, 0),
-    [leaderboardData]
-  );
+  const latestActivityMobile = latestActivity.slice(0, 3);
 
-  const hoursSinceLaunch = useMemo(() => {
-    if (leaderboardData.length === 0) return 1;
-    const earliestDate = Math.min(
-      ...leaderboardData.map((p) => new Date(p.created_at || Date.now()).getTime())
-    );
-    const msSince = Date.now() - earliestDate;
-    return Math.max(1, Math.floor(msSince / (1000 * 60 * 60)));
-  }, [leaderboardData]);
+  const topUpvoted = useMemo(() => {
+    const pool = champion ? [champion, ...activeBoard] : leaderboardData;
+    return [...pool]
+      .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0) || hoppedAt(b) - hoppedAt(a))
+      .slice(0, 5);
+  }, [leaderboardData, champion, activeBoard]);
 
-  const springValue = useSpring(0, { bounce: 0, duration: 2500 });
+  const topUpvotedMobile = topUpvoted.slice(0, 3);
 
-  useEffect(() => {
-    springValue.set(totalMoney);
-  }, [totalMoney, springValue]);
+  const showMobileExtras =
+    currentPage === 1 &&
+    activeCategory === "All" &&
+    !searchQuery.trim();
 
-  const displayMoney = useTransform(springValue, (val) => `$${Math.round(val).toLocaleString()}`);
+  const showLatestActivity = showMobileExtras && latestActivity.length > 0;
 
   const trackClick = (item: Product) => {
     setLeaderboardData((prev) =>
       prev.map((p) => (p.id === item.id ? { ...p, clicks: (p.clicks || 0) + 1 } : p))
     );
     trackProductClick(item.id);
+  };
+
+  const markVoted = (productId: string, nextCount: number) => {
+    setLeaderboardData((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, upvotes: nextCount } : p))
+    );
+    setVotedIds((prev) => {
+      const next = new Set(prev);
+      next.add(productId);
+      writeVotedToStorage([...next]);
+      return next;
+    });
   };
 
   const hopThis = (item: Product, e: React.MouseEvent) => {
@@ -224,8 +241,10 @@ export default function LiveLeaderboard({
   };
 
   return (
-    <section id="leaderboard" className="w-full px-4 md:px-8 pt-2 pb-10 flex flex-col items-center">
-      <div className="w-full max-w-[1000px]">
+    <section id="leaderboard" className="w-full px-4 md:px-8 lg:px-16 pt-2 pb-10 flex flex-col items-center">
+      <div className="page-wide mx-auto">
+        <div className="lg:grid lg:grid-cols-[70%_minmax(0,1fr)] lg:gap-x-12 lg:items-start">
+        <div className="min-w-0">
         {champion && (
           <div className="relative mb-5">
             <div className="absolute -inset-3 md:-inset-4 rounded-3xl bg-gradient-to-r from-amber-300/40 via-yellow-200/25 to-transparent blur-2xl animate-hof-glow pointer-events-none" />
@@ -250,13 +269,21 @@ export default function LiveLeaderboard({
               </button>
             </div>
 
+            <img
+              src="/theme/hoppy-rocket.png"
+              alt=""
+              width={243}
+              height={328}
+              className="pointer-events-none absolute left-2 bottom-1 z-10 hidden h-[70px] w-auto select-none lg:block"
+            />
+
             <a
               href={productPath(champion)}
               onClick={() => trackClick(champion)}
               onAuxClick={(e) => {
                 if (e.button === 1) trackClick(champion);
               }}
-              className="group relative overflow-hidden flex items-center gap-2.5 md:gap-3.5 py-3.5 px-3 md:px-3.5 rounded-2xl border border-amber-400/80 bg-gradient-to-r from-amber-200/80 via-yellow-50/70 to-white shadow-[0_0_0_1px_rgba(251,191,36,0.35),0_12px_40px_-12px_rgba(217,119,6,0.55)]"
+              className="group relative overflow-hidden flex items-center gap-2.5 md:gap-3.5 py-3.5 px-3 md:px-3.5 lg:pl-[4.75rem] rounded-2xl border border-amber-400/80 bg-gradient-to-r from-amber-200/80 via-yellow-50/70 to-white/80 backdrop-blur-xl shadow-[0_0_0_1px_rgba(251,191,36,0.35),0_12px_40px_-12px_rgba(217,119,6,0.55)]"
             >
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-amber-200/20 animate-hof-sheen" />
               <div className="pointer-events-none absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/70 to-transparent animate-hof-shimmer" />
@@ -307,13 +334,21 @@ export default function LiveLeaderboard({
                 </div>
                 <div className="text-[11px] font-medium text-amber-800/80">enshrined</div>
               </div>
+              <UpvoteButton
+                productId={champion.id}
+                count={champion.upvotes || 0}
+                voted={votedIds.has(champion.id)}
+                onVoted={markVoted}
+              />
             </a>
           </div>
         )}
 
-        <SponsoredSlots />
+        <div className="lg:hidden">
+          <SponsoredSlots />
+        </div>
 
-        <div className="relative mb-3 sm:mb-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+        <div className="relative mb-3 sm:mb-4 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h2 className="text-[15px] sm:text-xl md:text-2xl font-semibold tracking-tight text-foreground leading-none">
               Who&apos;s up
@@ -378,82 +413,70 @@ export default function LiveLeaderboard({
               );
             })}
           </div>
-
-          <p className="min-w-0 text-[11px] sm:text-sm text-secondary text-right">
-            made{" "}
-            <motion.span className="font-semibold text-accent-dark font-mono tabular-nums">
-              {displayMoney}
-            </motion.span>
-            <span className="hidden sm:inline">
-              {" "}in {hoursSinceLaunch} {hoursSinceLaunch === 1 ? "hour" : "hours"}
-            </span>
-          </p>
         </div>
 
-        <div className="flex items-center gap-4 mb-2 border-b border-border/70">
+        <div className="mb-3 flex items-center gap-2">
           <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar">
-            <div className="flex items-center gap-0.5 w-max pr-2">
-              {BOARD_FILTERS.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`relative shrink-0 px-3 py-2.5 text-[13px] font-medium transition-colors ${
-                    activeCategory === cat
-                      ? "text-foreground"
-                      : "text-secondary hover:text-foreground"
-                  }`}
-                >
-                  {cat}
-                  {activeCategory === cat && (
-                    <motion.span
-                      layoutId="category-underline"
-                      className="absolute left-3 right-3 -bottom-px h-[2px] bg-accent rounded-full"
-                    />
-                  )}
-                </button>
-              ))}
+            <div className="flex items-center gap-0.5 w-max">
+              {BOARD_FILTERS.map((cat) => {
+                const active = activeCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`relative shrink-0 rounded-full px-3 py-1.5 text-[12.5px] font-semibold tracking-tight transition-colors ${
+                      active ? "text-white" : "text-secondary hover:text-foreground hover:bg-white/60"
+                    }`}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="category-pill"
+                        className="absolute inset-0 rounded-full bg-gradient-to-b from-[#FF8E3C] to-[#F06A0F] shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_8px_18px_-8px_rgba(255,122,31,0.8)]"
+                        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                      />
+                    )}
+                    <span className="relative z-10">{cat}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="relative shrink-0 hidden sm:block w-[180px] mb-1.5">
-            <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-secondary/70" />
+          <label className="relative hidden sm:flex shrink-0 items-center w-[180px] rounded-full bg-white/60 border border-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] focus-within:border-accent/50 transition-colors">
+            <Search className="absolute left-2.5 w-3.5 h-3.5 text-secondary/70 pointer-events-none" />
             <input
               type="text"
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-5 pr-1 py-1.5 bg-transparent border-b border-transparent focus:border-accent/50 outline-none text-[13px] font-medium placeholder:text-secondary/50 transition-colors"
+              className="w-full bg-transparent pl-8 pr-3 py-1.5 outline-none text-[13px] font-medium placeholder:text-secondary/50"
             />
-          </div>
+          </label>
         </div>
 
-        <div className="relative sm:hidden mb-3">
-          <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-secondary/70" />
+        <label className="relative sm:hidden mb-3 flex items-center border-b border-foreground/15 focus-within:border-accent transition-colors">
+          <Search className="absolute left-3.5 w-3.5 h-3.5 text-secondary/70 pointer-events-none" />
           <input
             type="text"
             placeholder="Search products"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-5 pr-1 py-2 bg-transparent border-b border-border/50 outline-none text-[13px] font-medium placeholder:text-secondary/50"
+            className="w-full bg-transparent pl-9 pr-3 py-2.5 outline-none text-[13px] font-medium placeholder:text-secondary/50"
           />
-        </div>
+        </label>
 
         <div className="flex flex-col min-h-[280px]">
           {isLoading ? (
-            <div className="py-16 text-center text-secondary text-sm">Loading live leaderboard...</div>
+            <div className="flex flex-col">
+              {Array.from({ length: 5 }, (_, i) => (
+                <div key={i} className="h-[76px] border-b border-border/50 animate-pulse" style={{ opacity: 1 - i * 0.15 }} />
+              ))}
+            </div>
           ) : (
             <>
               <AnimatePresence mode="popLayout">
-                {paginatedData.map((item, idx) => {
+                {paginatedData.map((item) => {
                   const productHref = productPath(item);
                   const podium = item.rank === 1 ? "gold" : item.rank === 2 ? "silver" : item.rank === 3 ? "bronze" : null;
-
-                  const rowTone = podium === "gold"
-                    ? "my-2 rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-200/70 via-amber-50/50 to-white shadow-[0_8px_28px_-10px_rgba(217,119,6,0.45)] px-2.5 md:px-3"
-                    : podium === "silver"
-                      ? "my-2 rounded-xl border-2 border-slate-400 bg-gradient-to-r from-slate-200/80 via-slate-50/50 to-white shadow-[0_8px_28px_-10px_rgba(71,85,105,0.35)] px-2.5 md:px-3"
-                      : podium === "bronze"
-                        ? "my-2 rounded-xl border-2 border-orange-500/80 bg-gradient-to-r from-orange-300/50 via-orange-50/40 to-white shadow-[0_8px_28px_-10px_rgba(194,65,12,0.35)] px-2.5 md:px-3"
-                        : "border-b border-border/50 hover:bg-white/40";
 
                   const medalTone = podium === "gold"
                     ? "bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 ring-2 ring-amber-300/80 shadow-md shadow-amber-500/30"
@@ -461,30 +484,13 @@ export default function LiveLeaderboard({
                       ? "bg-gradient-to-br from-slate-100 to-slate-400 text-slate-800 ring-2 ring-slate-300 shadow-md shadow-slate-400/25"
                       : podium === "bronze"
                         ? "bg-gradient-to-br from-orange-300 to-amber-700 text-orange-950 ring-2 ring-orange-400/70 shadow-md shadow-orange-500/20"
-                        : "text-secondary";
-
-                  const placeLabel = podium === "gold" ? "1st" : podium === "silver" ? "2nd" : podium === "bronze" ? "3rd" : null;
-                  const placeChip = podium === "gold"
-                    ? "bg-amber-400/25 text-amber-900 border-amber-400/50"
-                    : podium === "silver"
-                      ? "bg-slate-300/40 text-slate-700 border-slate-400/50"
-                      : "bg-orange-300/30 text-orange-900 border-orange-400/50";
-
-                  const logoRing = podium === "gold"
-                    ? "ring-2 ring-amber-400"
-                    : podium === "silver"
-                      ? "ring-2 ring-slate-400"
-                      : podium === "bronze"
-                        ? "ring-2 ring-orange-500/80"
                         : "";
 
-                  const showActivityAfter =
-                    currentPage === 1 &&
-                    latestActivity.length > 0 &&
+                  const insertMobileExtras =
+                    showMobileExtras &&
                     (item.rank === 3 ||
-                      (idx === paginatedData.length - 1 &&
-                        item.rank <= 3 &&
-                        !paginatedData.some((p) => p.rank === 3)));
+                      (item === paginatedData[paginatedData.length - 1] &&
+                        !paginatedData.some((row) => row.rank === 3)));
 
                   return (
                     <Fragment key={item.id}>
@@ -499,7 +505,7 @@ export default function LiveLeaderboard({
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className={`group flex items-center gap-3 md:gap-4 py-3.5 transition-colors -mx-1 px-1 ${rowTone} ${podium ? "py-4" : ""}`}
+                      className="group flex items-center gap-3 md:gap-4 py-3.5 border-b border-border/50 hover:bg-white/40 -mx-1 px-1 transition-colors"
                     >
                       {podium ? (
                         <span className={`flex items-center justify-center w-8 h-8 rounded-full text-[13px] font-bold tabular-nums shrink-0 ${medalTone}`}>
@@ -511,7 +517,7 @@ export default function LiveLeaderboard({
                         </span>
                       )}
 
-                      <div className={`relative shrink-0 rounded-xl overflow-hidden bg-muted ${logoRing} ${podium ? "w-14 h-14" : "w-12 h-12 border border-border/40"}`}>
+                      <div className="relative shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-muted border border-border/40">
                         {item.url ? (
                           <img
                             src={getProductLogoUrl(item)}
@@ -526,21 +532,14 @@ export default function LiveLeaderboard({
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 min-w-0">
-                          <h3 className={`font-semibold tracking-tight text-foreground truncate group-hover:text-accent transition-colors ${
-                            podium ? "text-[15px] md:text-[17px]" : "text-[14px] md:text-[15px]"
-                          }`}>
+                          <h3 className="text-[14px] md:text-[15px] font-semibold tracking-tight text-foreground truncate group-hover:text-accent transition-colors">
                             {item.name}
                           </h3>
-                          {placeLabel && (
-                            <span className={`hidden sm:inline shrink-0 px-1.5 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wide ${placeChip}`}>
-                              {placeLabel}
-                            </span>
-                          )}
                           <span className="hidden md:inline text-[11px] text-secondary/70 shrink-0">
                             {item.category}
                           </span>
                         </div>
-                        <p className={`text-secondary truncate max-w-[520px] ${podium ? "text-[13px]" : "text-[12px]"}`}>
+                        <p className="text-secondary truncate max-w-[520px] text-[12px]">
                           {item.description}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5 text-[11px] text-secondary/80">
@@ -554,64 +553,40 @@ export default function LiveLeaderboard({
                         </div>
                       </div>
 
-                      <div className="shrink-0 flex flex-col items-end gap-1">
-                        <span className={`font-semibold tabular-nums ${
-                          podium ? "text-[17px] md:text-[18px]" : "text-[15px] md:text-base"
-                        } ${
-                          podium === "gold" ? "text-amber-800" : podium === "silver" ? "text-slate-700" : podium === "bronze" ? "text-orange-900" : ""
-                        }`}>
-                          ${item.price.toLocaleString()}
-                        </span>
-                        <button
-                          onClick={(e) => hopThis(item, e)}
-                          className="inline-flex items-center gap-1 text-[11px] font-medium text-secondary hover:text-accent transition-colors"
-                        >
-                          hop
-                          <ArrowRight className="w-3 h-3" />
-                        </button>
+                      <div className="shrink-0 flex items-center gap-1">
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="font-semibold tabular-nums text-[15px] md:text-base">
+                            ${item.price.toLocaleString()}
+                          </span>
+                          <button
+                            onClick={(e) => hopThis(item, e)}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-secondary hover:text-accent transition-colors"
+                          >
+                            hop
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <UpvoteButton
+                          productId={item.id}
+                          count={item.upvotes || 0}
+                          voted={votedIds.has(item.id)}
+                          onVoted={markVoted}
+                        />
                       </div>
                     </motion.a>
-                    {showActivityAfter && (
-                      <div className="my-3 py-2.5 -mx-1 px-1 bg-gradient-to-r from-accent/20 via-accent/8 to-transparent">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-accent-dark/80 mb-1.5">
-                          Latest activity
-                        </p>
-                        <div className="grid grid-cols-3 gap-2 md:gap-4">
-                          {latestActivity.map((activity) => {
-                            return (
-                              <a
-                                key={activity.id}
-                                href={productPath(activity)}
-                                onClick={() => trackClick(activity)}
-                                onAuxClick={(e) => {
-                                  if (e.button === 1) trackClick(activity);
-                                }}
-                                className="group/act min-w-0 flex items-center gap-1.5"
-                              >
-                                <div className="relative shrink-0 w-6 h-6 rounded overflow-hidden bg-muted">
-                                  {activity.url ? (
-                                    <img
-                                      src={getProductLogoUrl(activity)}
-                                      alt=""
-                                      className="absolute inset-0 w-full h-full object-cover bg-white"
-                                      onError={(e) => handleLogoError(e.currentTarget, activity.url)}
-                                    />
-                                  ) : (
-                                    <img src="/globe.svg" alt="" className="w-3 h-3 m-auto mt-1.5 opacity-40" />
-                                  )}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-[12px] md:text-[13px] font-semibold tracking-tight text-foreground truncate group-hover/act:text-accent transition-colors">
-                                    {activity.name}
-                                  </p>
-                                  <p className="text-[11px] text-secondary truncate">
-                                    at #{activity.rank} · ${activity.price.toLocaleString()} · {getTimeAgo(activity.last_hopped_at || activity.created_at)}
-                                  </p>
-                                </div>
-                              </a>
-                            );
-                          })}
-                        </div>
+                    {insertMobileExtras && (
+                      <div className="lg:hidden">
+                        <TopUpvoted
+                          items={topUpvotedMobile}
+                          voted={votedIds}
+                          championId={champion?.id}
+                          onOpen={trackClick}
+                          onVoted={markVoted}
+                          layout="strip"
+                        />
+                        {showLatestActivity && (
+                          <LatestActivity items={latestActivityMobile} onOpen={trackClick} />
+                        )}
                       </div>
                     )}
                     </Fragment>
@@ -620,7 +595,14 @@ export default function LiveLeaderboard({
               </AnimatePresence>
 
               {filteredData.length === 0 && (
-                <div className="py-16 text-center text-secondary">
+                <div className="my-6 py-10 px-2 text-center text-secondary flex flex-col items-center">
+                  <img
+                    src="/theme/hoppy-angry.png"
+                    alt=""
+                    width={142}
+                    height={189}
+                    className="h-16 w-auto mb-3 animate-hoppy-bob select-none"
+                  />
                   <p className="text-sm font-medium text-foreground mb-1">
                     {boardMode === "recent" && !searchQuery && activeCategory === "All"
                       ? "No hops in the last 48 hours"
@@ -641,6 +623,20 @@ export default function LiveLeaderboard({
               />
             </>
           )}
+        </div>
+        </div>
+
+        <aside className="hidden lg:block self-start">
+          <SponsoredSlots variant="sidebar" />
+          <TopUpvoted
+            items={topUpvoted}
+            voted={votedIds}
+            championId={champion?.id}
+            onOpen={trackClick}
+            onVoted={markVoted}
+          />
+          <LatestActivity items={latestActivity} layout="stack" onOpen={trackClick} />
+        </aside>
         </div>
       </div>
     </section>

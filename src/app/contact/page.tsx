@@ -15,13 +15,13 @@ export default function ContactPage() {
             Have a question about your listing or need help? We're here for you. Reach out to us and we'll get back to you as soon as possible.
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-[700px]">
-            <div className="bg-background border border-border p-8 rounded-2xl flex flex-col items-center text-center hover:border-accent/50 transition-colors shadow-sm">
-              <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center text-accent mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full max-w-[700px]">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center text-accent mb-5">
                 <Mail className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold mb-3 text-foreground">Email Support</h2>
-              <p className="text-secondary text-sm mb-6">
+              <h2 className="text-xl font-semibold mb-3 text-foreground">Email Support</h2>
+              <p className="text-secondary text-base mb-5">
                 The best way to reach us is via email. We typically respond within 24 hours.
               </p>
               <a href="mailto:lunacodes07@gmail.com" className="text-accent font-semibold hover:underline">
@@ -29,15 +29,15 @@ export default function ContactPage() {
               </a>
             </div>
 
-            <div className="bg-background border border-border p-8 rounded-2xl flex flex-col items-center text-center hover:border-accent/50 transition-colors shadow-sm">
-              <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center text-accent mb-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center text-accent mb-5">
                 <MessageSquare className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold mb-3 text-foreground">Social Media</h2>
-              <p className="text-secondary text-sm mb-6">
+              <h2 className="text-xl font-semibold mb-3 text-foreground">Social Media</h2>
+              <p className="text-secondary text-base mb-5">
                 Reach out to us on X (Twitter) for quick questions or to stay updated.
               </p>
-              <a href="#" className="text-accent font-semibold hover:underline">
+              <a href="https://x.com/alohaproxy" className="text-accent font-semibold hover:underline">
                 @alohaproxy
               </a>
             </div>

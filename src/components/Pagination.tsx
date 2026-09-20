@@ -9,7 +9,7 @@ type PaginationProps = {
 
 const itemClass = (active: boolean) =>
   `w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors ${
-    active ? "bg-foreground text-background" : "text-secondary hover:text-foreground"
+    active ? "btn-primary" : "text-secondary hover:text-foreground hover:bg-white/70"
   }`;
 
 export default function Pagination({ current, total, hrefForPage }: PaginationProps) {
@@ -20,7 +20,7 @@ export default function Pagination({ current, total, hrefForPage }: PaginationPr
   const next = current < total ? current + 1 : null;
 
   return (
-    <nav aria-label="Pagination" className="flex items-center justify-center gap-1.5 mt-8">
+    <nav aria-label="Pagination" className="mx-auto mt-8 flex w-max max-w-full items-center justify-center gap-1.5">
       {prev ? (
         <Link
           href={hrefForPage(prev)}

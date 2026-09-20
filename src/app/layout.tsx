@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import SceneBackdrop from "@/components/SceneBackdrop";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -10,11 +11,11 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.hopup.lol"),
-  title: "HopUp — Your Product Deserves a Better Spot",
-  description: "List it. Hop up. Get noticed.",
+  title: "HopUp — Your Product Deserves More Eyes",
+  description: "A backlink on every listing. Pay once. Rank higher.",
   openGraph: {
-    title: "HopUp — Your Product Deserves a Better Spot",
-    description: "List it. Hop up. Get noticed.",
+    title: "HopUp — Your Product Deserves More Eyes",
+    description: "A backlink on every listing. Pay once. Rank higher.",
     type: "website",
     locale: "en_US",
     url: "https://www.hopup.lol",
@@ -29,8 +30,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "HopUp — Your Product Deserves a Better Spot",
-    description: "List it. Hop up. Get noticed.",
+    title: "HopUp — Your Product Deserves More Eyes",
+    description: "A backlink on every listing. Pay once. Rank higher.",
     images: ["https://www.hopup.lol/og.jpg"],
   },
 };
@@ -42,7 +43,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${outfit.variable} scroll-smooth`}>
-      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-accent/30 selection:text-foreground">
+      <body className="relative min-h-screen bg-background text-foreground antialiased selection:bg-accent/30 selection:text-foreground">
+        <SceneBackdrop />
         {children}
         <Analytics />
       </body>

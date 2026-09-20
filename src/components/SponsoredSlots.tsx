@@ -12,7 +12,7 @@ import { DEFAULT_CATEGORY, PRODUCT_CATEGORIES } from "@/lib/categories";
 import { SPONSOR_PLANS, SPONSOR_SLOT_COUNT, type SponsorPlan } from "@/lib/sponsored";
 import type { SponsoredSlot } from "@/types";
 
-const SPOTS = [1, 2, 3, 4] as const;
+const SPOTS = [1, 2] as const;
 
 const getTimeLeft = (expiresAt: string) => {
   const ms = new Date(expiresAt).getTime() - Date.now();
@@ -22,33 +22,53 @@ const getTimeLeft = (expiresAt: string) => {
   return `${days} days left`;
 };
 
-function EmptyCard({ n, onClaim }: { n: number; onClaim: (n: number) => void }) {
+function EmptyCard({
+  n,
+  onClaim,
+  large,
+}: {
+  n: number;
+  onClaim: (n: number) => void;
+  large?: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={() => onClaim(n)}
-      className="group flex h-[72px] w-full items-center gap-2.5 rounded-xl border border-dashed border-accent/50 bg-[linear-gradient(180deg,rgba(255,140,115,0.06),rgba(250,248,245,0.4))] px-3 text-left transition-colors hover:border-accent hover:bg-accent/[0.08]"
+      className={`group flex w-full items-center border border-dashed border-accent/50 bg-transparent text-left transition-colors hover:border-accent ${
+        large
+          ? "h-[128px] gap-3.5 rounded-2xl px-4"
+          : "h-[72px] gap-2.5 rounded-xl px-3"
+      }`}
     >
-      <span className="w-4 shrink-0 text-[10px] font-semibold tabular-nums tracking-wide text-secondary/60">
+      <span className={`shrink-0 font-semibold tabular-nums tracking-wide text-secondary/60 ${
+        large ? "w-5 text-[12px]" : "w-4 text-[10px]"
+      }`}>
         {String(n).padStart(2, "0")}
       </span>
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-dashed border-accent/55 text-[16px] leading-none text-accent-dark/80 transition-colors group-hover:border-accent group-hover:text-accent-dark">
+      <span className={`flex shrink-0 items-center justify-center rounded-full border border-dashed border-accent/55 leading-none text-accent-dark/80 transition-colors group-hover:border-accent group-hover:text-accent-dark ${
+        large ? "h-11 w-11 text-[22px]" : "h-7 w-7 text-[16px]"
+      }`}>
         +
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">This spot</p>
-        <p className="text-[11px] text-secondary">
+        <p className={`truncate font-semibold tracking-tight text-foreground ${large ? "text-[16px]" : "text-[13px]"}`}>
+          This spot
+        </p>
+        <p className={`text-secondary ${large ? "mt-0.5 text-[13px]" : "text-[11px]"}`}>
           $30<span className="text-secondary/70">/week</span>
         </p>
       </div>
-      <span className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.14em] text-accent-dark/75">
+      <span className={`shrink-0 font-semibold uppercase tracking-[0.14em] text-accent-dark/75 ${
+        large ? "text-[11px]" : "text-[9px]"
+      }`}>
         Open
       </span>
     </button>
   );
 }
 
-function FilledCard({ slot }: { slot: SponsoredSlot }) {
+function FilledCard({ slot, large }: { slot: SponsoredSlot; large?: boolean }) {
   const href = withHopupRef(slot.url) || slot.url;
 
   const trackClick = () => {
@@ -66,15 +86,25 @@ function FilledCard({ slot }: { slot: SponsoredSlot }) {
       onAuxClick={(e) => {
         if (e.button === 1) trackClick();
       }}
-      className="relative flex h-[72px] w-full items-center gap-2 overflow-hidden rounded-xl border border-border bg-white/75 px-2.5 pt-3 pb-1.5 shadow-[0_1px_0_rgba(45,41,38,0.04)] transition-colors hover:border-accent/40"
+      className={`relative flex w-full items-center overflow-hidden border border-border/70 transition-colors hover:border-accent/40 ${
+        large
+          ? "h-[128px] gap-3 rounded-2xl px-4 pt-5 pb-3"
+          : "h-[72px] gap-2 rounded-xl px-2.5 pt-3 pb-1.5"
+      }`}
     >
-      <span className="absolute top-1 left-2 text-[8px] font-semibold uppercase leading-none tracking-[0.12em] text-secondary/65">
+      <span className={`absolute left-2 font-semibold uppercase leading-none tracking-[0.12em] text-secondary/65 ${
+        large ? "top-2 text-[10px]" : "top-1 text-[8px]"
+      }`}>
         Ad
       </span>
-      <span className="absolute top-1 right-2 text-[8px] leading-none tabular-nums text-secondary/65">
+      <span className={`absolute right-2 leading-none tabular-nums text-secondary/65 ${
+        large ? "top-2 text-[11px]" : "top-1 text-[8px]"
+      }`}>
         {getTimeLeft(slot.expires_at)}
       </span>
-      <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-muted">
+      <div className={`relative shrink-0 overflow-hidden rounded-lg bg-muted ${
+        large ? "h-12 w-12 rounded-xl" : "h-8 w-8"
+      }`}>
         <img
           src={getProxiedLogoUrl(slot.url)}
           alt=""
@@ -83,8 +113,12 @@ function FilledCard({ slot }: { slot: SponsoredSlot }) {
         />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">{slot.name}</p>
-        <p className="truncate text-[12px] text-secondary">{slot.description}</p>
+        <p className={`truncate font-semibold tracking-tight text-foreground ${large ? "text-[16px]" : "text-[13px]"}`}>
+          {slot.name}
+        </p>
+        <p className={`truncate text-secondary ${large ? "mt-0.5 text-[13px]" : "text-[12px]"}`}>
+          {slot.description}
+        </p>
       </div>
     </a>
   );
@@ -307,8 +341,8 @@ function SponsorModal({
                     onClick={() => setPlan(option)}
                     className={`rounded-xl border px-2 py-2.5 text-left transition-colors ${
                       selected
-                        ? "border-accent bg-accent/10"
-                        : "border-border bg-white/50 hover:border-accent/40"
+                        ? "border-accent bg-accent/10 shadow-[0_0_0_3px_rgba(255,122,31,0.15)]"
+                        : "border-white/80 bg-white/50 hover:border-accent/40"
                     }`}
                   >
                     <p className="text-[16px] font-semibold tabular-nums tracking-tight text-foreground">
@@ -333,10 +367,10 @@ function SponsorModal({
           <button
             type="submit"
             disabled={isProcessing}
-            className="group mt-1 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-foreground px-6 py-2.5 text-base font-semibold text-background transition-colors hover:bg-accent hover:text-foreground disabled:opacity-60"
+            className="group btn-primary mt-1 inline-flex w-full items-center justify-center gap-1.5 rounded-full px-6 py-2.5 text-base font-semibold disabled:opacity-60"
           >
             Pay ${plan.price}
-            <span className="font-medium text-background/70 group-hover:text-foreground/70">
+            <span className="font-medium text-white/75">
               · {plan.label}
             </span>
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
@@ -347,7 +381,7 @@ function SponsorModal({
   );
 }
 
-export default function SponsoredSlots() {
+export default function SponsoredSlots({ variant = "default" }: { variant?: "default" | "sidebar" }) {
   const [listings, setListings] = useState<SponsoredSlot[]>([]);
   const [claimSlot, setClaimSlot] = useState<number | null>(null);
 
@@ -370,7 +404,7 @@ export default function SponsoredSlots() {
     fetchSlots();
 
     const subscription = supabase
-      .channel("sponsored_slots_changes")
+      .channel(`sponsored_slots_changes_${variant}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "sponsored_slots" },
@@ -383,7 +417,7 @@ export default function SponsoredSlots() {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [fetchSlots]);
+  }, [fetchSlots, variant]);
 
   const bySlot = useMemo(() => {
     const map = new Map<number, SponsoredSlot>();
@@ -393,21 +427,23 @@ export default function SponsoredSlots() {
     return map;
   }, [listings]);
 
-  const renderCard = (n: number, key: string) => {
+  const sidebar = variant === "sidebar";
+
+  const renderCard = (n: number) => {
     const listing = bySlot.get(n);
     return (
-      <div key={key} className="w-[70vw] max-w-[220px] shrink-0 md:w-auto md:max-w-none">
+      <div key={n} className="w-full min-w-0">
         {listing ? (
-          <FilledCard slot={listing} />
+          <FilledCard slot={listing} large={sidebar} />
         ) : (
-          <EmptyCard n={n} onClaim={setClaimSlot} />
+          <EmptyCard n={n} onClaim={setClaimSlot} large={sidebar} />
         )}
       </div>
     );
   };
 
   return (
-    <div className="mb-5">
+    <div className={sidebar ? "mb-8" : "mb-5"}>
       <div className="mb-2.5 flex items-end justify-between gap-3">
         <div>
           <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-dark/85">
@@ -423,18 +459,8 @@ export default function SponsoredSlots() {
         </p>
       </div>
 
-      <div
-        className={`-mx-4 overflow-hidden px-4 md:hidden ${
-          claimSlot ? "[&_.sponsor-track]:[animation-play-state:paused]" : ""
-        }`}
-      >
-        <div className="sponsor-track flex w-max gap-2.5 motion-safe:animate-sponsor-marquee hover:[animation-play-state:paused] active:[animation-play-state:paused]">
-          {[...SPOTS, ...SPOTS].map((n, i) => renderCard(n, `${n}-${i}`))}
-        </div>
-      </div>
-
-      <div className="hidden md:grid md:grid-cols-4 md:gap-3">
-        {SPOTS.map((n) => renderCard(n, `desk-${n}`))}
+      <div className={sidebar ? "grid grid-cols-1 gap-3.5" : "grid grid-cols-2 gap-2.5"}>
+        {SPOTS.map(renderCard)}
       </div>
 
       <AnimatePresence>

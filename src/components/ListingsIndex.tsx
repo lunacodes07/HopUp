@@ -39,7 +39,14 @@ export default function ListingsIndex({ products }: { products: Product[] }) {
           </div>
 
           {products.length === 0 ? (
-            <div className="py-16 text-center">
+            <div className="py-14 px-2 text-center flex flex-col items-center">
+              <img
+                src="/theme/hoppy-angry.png"
+                alt=""
+                width={142}
+                height={189}
+                className="h-16 w-auto mb-3 animate-hoppy-bob select-none"
+              />
               <p className="text-sm font-medium text-foreground mb-1">The board is empty</p>
               <p className="text-[13px] text-secondary">Be the first to hop up.</p>
             </div>

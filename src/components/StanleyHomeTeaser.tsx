@@ -112,7 +112,7 @@ export default function StanleyHomeTeaser() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-60px" }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-[1000px] rounded-[28px] border border-white/70 bg-white/40 backdrop-blur-xl shadow-[0_12px_40px_-24px_rgba(45,41,38,0.35)] overflow-hidden"
+        className="page-wide"
       >
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(300px,1.15fr)] gap-5 md:gap-7 p-5 md:p-7 items-center">
           <div className="min-w-0 text-center md:text-left">
@@ -191,14 +191,14 @@ export default function StanleyHomeTeaser() {
 
             <Link
               href="/brandmystanley"
-              className="mt-5 inline-flex items-center justify-center gap-1.5 bg-foreground text-background px-5 py-2.5 rounded-full text-[14px] font-semibold hover:bg-accent hover:text-foreground transition-colors"
+              className="btn-primary mt-5 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full text-[14px] font-semibold"
             >
               Get on the cup
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
-          <div className="relative rounded-2xl border border-white/70 bg-white/50 overflow-hidden h-[320px] sm:h-[380px] md:h-[440px]">
+          <div className="relative rounded-2xl border border-white/80 bg-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden h-[320px] sm:h-[380px] md:h-[440px]">
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0"

@@ -6,14 +6,26 @@
   --color-background: #FAF8F5;
   --color-foreground: #2D2926;
   --color-secondary: #7A7571;
-  --color-accent: #FF8C73;
-  --color-accent-dark: #E67056;
+  /* Hoppy orange is the lead. */
+  --color-accent: #FF7A1F;
+  --color-accent-dark: #E8620A;
   --color-border: #E8E4DF;
   --color-muted: #F0EDE8;
   --color-white: #FFFFFF;
+  /* Funky supporting cast, lifted from Hoppy's hoodie, crown, and confetti. */
+  --color-grape: #7C3AED;
+  --color-lilac: #E9E2FF;
+  --color-butter: #FFD447;
+  --color-mint: #9FE7C7;
+  --color-bubblegum: #FF9ED8;
+
+  --animate-drift: drift 26s ease-in-out infinite alternate;
+  --animate-drift-slow: drift 38s ease-in-out infinite alternate-reverse;
+  --animate-hoppy-bob: hoppy-bob 4.5s ease-in-out infinite;
   
   --animate-marquee: marquee 30s linear infinite;
   --animate-sponsor-marquee: sponsor-marquee 22s linear infinite;
+  --animate-testimonial-marquee: testimonial-marquee 42s linear infinite;
   --animate-hof-shimmer: hof-shimmer 3.6s ease-in-out infinite;
   --animate-hof-glow: hof-glow 2.8s ease-in-out infinite;
   --animate-hof-sparkle: hof-sparkle 2.2s ease-in-out infinite;
@@ -27,6 +39,12 @@
   }
 
   @keyframes sponsor-marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Cards enter from the right and drift left. */
+  @keyframes testimonial-marquee {
     from { transform: translateX(0); }
     to { transform: translateX(-50%); }
   }
@@ -63,6 +81,16 @@
   @keyframes toggle-spin {
     to { transform: rotate(360deg); }
   }
+
+  @keyframes drift {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to { transform: translate3d(3%, 4%, 0) scale(1.06); }
+  }
+
+  @keyframes hoppy-bob {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-6px) rotate(2deg); }
+  }
 }
 
 :root {
@@ -78,10 +106,178 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/*
+ * Liquid glass. Everything floats over the fixed backdrop, so surfaces are
+ * translucent, blurred, and carry a soft "bubble" specular in the top-left.
+ */
+@layer components {
+  .glass,
+  .glass-strong,
+  .glass-row {
+    position: relative;
+    isolation: isolate;
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.74) 0%, rgba(255, 255, 255, 0.46) 55%, rgba(255, 255, 255, 0.6) 100%);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.35),
+      0 14px 38px -22px rgba(45, 41, 38, 0.38),
+      0 1px 2px rgba(45, 41, 38, 0.04);
+  }
+
+  .glass-strong {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.72) 60%, rgba(255, 255, 255, 0.84) 100%);
+  }
+
+  .glass-row {
+    -webkit-backdrop-filter: blur(12px) saturate(1.35);
+    backdrop-filter: blur(12px) saturate(1.35);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      0 10px 28px -20px rgba(45, 41, 38, 0.35);
+  }
+
+  /* Bubble highlight — a soft specular blob that sells the "liquid" read. */
+  .glass::before,
+  .glass-strong::before,
+  .glass-row::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 80% at 12% 0%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 42%),
+      radial-gradient(60% 50% at 96% 100%, rgba(255, 122, 31, 0.1) 0%, rgba(255, 122, 31, 0) 60%);
+  }
+
+  /* Hover glow without transform, so it plays nice with framer `layout` rows. */
+  .glass-hover {
+    transition:
+      border-color 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  /* Lift variant for static cards. */
+  .glass-lift {
+    transition:
+      transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  .glass-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  .glass-hover:hover,
+  .glass-lift:hover {
+    border-color: rgba(255, 122, 31, 0.45);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      0 18px 40px -20px rgba(255, 122, 31, 0.35),
+      0 1px 2px rgba(45, 41, 38, 0.04);
+  }
+
+  /* Tinted glass. Funky, but still see-through. */
+  .tint-orange { background: linear-gradient(135deg, rgba(255, 122, 31, 0.22), rgba(255, 255, 255, 0.5)); }
+  .tint-grape { background: linear-gradient(135deg, rgba(124, 58, 237, 0.16), rgba(255, 255, 255, 0.52)); }
+  .tint-butter { background: linear-gradient(135deg, rgba(255, 212, 71, 0.32), rgba(255, 255, 255, 0.52)); }
+  .tint-mint { background: linear-gradient(135deg, rgba(159, 231, 199, 0.42), rgba(255, 255, 255, 0.52)); }
+  .tint-bubblegum { background: linear-gradient(135deg, rgba(255, 158, 216, 0.3), rgba(255, 255, 255, 0.52)); }
+
+  /* Primary CTA — orange, glossy, unmistakable. */
+  .btn-primary {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    color: #fff;
+    background: linear-gradient(180deg, #FF8E3C 0%, #FF7A1F 55%, #F06A0F 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+      0 10px 24px -12px rgba(255, 122, 31, 0.7);
+    transition:
+      transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 180ms ease,
+      filter 180ms ease;
+  }
+
+  .btn-primary::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(90% 60% at 20% 0%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 55%);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: saturate(1.1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+      0 14px 30px -12px rgba(255, 122, 31, 0.85);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  /* Secondary pill on glass. */
+  .btn-glass {
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
+  }
+
+  .btn-glass:hover {
+    border-color: rgba(255, 122, 31, 0.5);
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  /* Shared homepage column — heading, form, and leaderboard share this. */
+  .page-wide {
+    width: 100%;
+    max-width: 1200px;
+  }
+
+  .page-nav {
+    width: 100%;
+    max-width: 1600px;
+  }
+
+  .quote-card {
+    background:
+      linear-gradient(160deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.55) 48%, rgba(255, 255, 255, 0.7) 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 1),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.3),
+      0 18px 40px -18px rgba(45, 41, 38, 0.28),
+      0 0 0 1px rgba(255, 255, 255, 0.35);
+  }
+}
+
 /* Custom utility classes */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Grain overlay — keeps big soft gradients from looking flat. */
+  .grain {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    background-size: 160px 160px;
   }
 
   .no-scrollbar {
@@ -91,5 +287,16 @@ body {
 
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+
+  .fade-x {
+    mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .testimonial-track {
+      animation: none !important;
+      transform: none !important;
+    }
   }
 }

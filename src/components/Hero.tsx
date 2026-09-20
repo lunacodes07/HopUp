@@ -333,12 +333,12 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative w-full px-4 md:px-8 pt-20 md:pt-24 pb-3 md:pb-4">
-      <div className="w-full max-w-[1000px] mx-auto flex flex-col items-center">
+    <section className="relative w-full px-4 md:px-8 lg:px-16 pt-20 md:pt-24 pb-3 md:pb-4">
+      <div className="page-wide mx-auto flex flex-col items-center">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mb-4 text-center">
           <Link
             href="/brandmystanley"
-            className="group relative inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-white/75 pl-1 pr-2.5 py-0.5 text-[12px] font-semibold text-foreground shadow-[0_4px_14px_-8px_rgba(255,140,115,0.7)] backdrop-blur transition-colors hover:border-accent/60 hover:bg-white"
+            className="group btn-glass relative inline-flex items-center gap-1.5 rounded-full pl-1 pr-2.5 py-0.5 text-[12px] font-semibold text-foreground shadow-[0_4px_14px_-8px_rgba(255,122,31,0.6)]"
           >
             <span className="relative overflow-hidden rounded-full bg-accent px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.12em] text-white">
               New
@@ -358,18 +358,18 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="w-full flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 lg:gap-8 mb-5">
+        <div className="w-full flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 lg:gap-10 mb-6 lg:mb-8">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden lg:block text-left max-w-[520px]"
+            className="hidden lg:block text-left max-w-[560px]"
           >
-            <h1 className="text-[32px] md:text-[42px] font-semibold tracking-tight text-foreground leading-snug mb-2">
-              Your product deserves a <span className="text-accent">better spot.</span>
+            <h1 className="text-[32px] md:text-[42px] lg:text-[56px] font-semibold tracking-tight text-foreground leading-[1.05] mb-3">
+              Your product deserves <span className="text-accent">more eyes.</span>
             </h1>
-            <p className="text-base md:text-lg text-secondary">
-              Pay once. No subscriptions. Pay more to rank higher.
+            <p className="text-base md:text-lg lg:text-[22px] text-secondary">
+              A backlink on every listing. Pay once. Rank higher.
             </p>
           </motion.div>
 
@@ -377,7 +377,7 @@ export default function Hero() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col items-center lg:items-end text-center lg:text-right shrink-0"
+            className="flex flex-col items-center lg:items-end text-center lg:text-right shrink-0 lg:max-w-[420px]"
           >
             <button
               type="button"
@@ -388,7 +388,7 @@ export default function Hero() {
                 );
                 urlInputRef.current?.focus();
               }}
-              className="text-[26px] md:text-[32px] font-semibold tracking-tight text-foreground leading-snug hover:opacity-80 transition-opacity"
+              className="text-[26px] md:text-[32px] lg:text-[42px] font-semibold tracking-tight text-foreground leading-snug hover:opacity-80 transition-opacity"
             >
               {showHofTarget ? (
                 <>
@@ -402,7 +402,7 @@ export default function Hero() {
                 </>
               )}
             </button>
-            <p className="text-sm md:text-base text-secondary mt-1.5">
+            <p className="text-sm md:text-base lg:text-lg text-secondary mt-2">
               {rankForTwoRecent === 1 ? (
                 <>
                   Or take{" "}
@@ -458,10 +458,10 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           onSubmit={handleHop}
-          className="w-full relative"
+          className="relative w-full px-1 py-2"
         >
           {isProcessing && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/70 backdrop-blur-[2px]">
+            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[26px] bg-background/70 backdrop-blur-[2px]">
               <Loader2 className="w-5 h-5 text-accent animate-spin" />
             </div>
           )}
@@ -530,7 +530,7 @@ export default function Hero() {
             <button
               type="submit"
               disabled={isProcessing}
-              className="group shrink-0 inline-flex items-center justify-center gap-1.5 bg-foreground text-background px-6 py-2.5 rounded-full text-base font-semibold hover:bg-accent hover:text-foreground transition-colors disabled:opacity-60"
+              className="group btn-primary shrink-0 inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-full text-base font-semibold disabled:opacity-60"
             >
               Hop Up
               <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />

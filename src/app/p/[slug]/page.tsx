@@ -140,9 +140,9 @@ export default async function ProductListingPage({ params }: PageProps) {
             <span className="text-foreground">{product.name}</span>
           </p>
 
-          <article className="rounded-3xl border border-white/70 bg-white/50 backdrop-blur-xl shadow-[0_12px_40px_-24px_rgba(45,41,38,0.35)] px-5 py-6 md:px-8 md:py-8">
+          <article>
             <div className="flex items-start gap-4 md:gap-5">
-              <div className="relative shrink-0 w-16 h-16 md:w-[72px] md:h-[72px] rounded-2xl overflow-hidden bg-muted border border-border/50 shadow-sm">
+              <div className="relative shrink-0 w-16 h-16 md:w-[72px] md:h-[72px] rounded-2xl overflow-hidden bg-white border border-white/80 shadow-[0_4px_14px_-4px_rgba(45,41,38,0.25)]">
                 <img
                   src={getProductLogoUrl(product)}
                   alt={`${product.name} logo`}
@@ -179,22 +179,22 @@ export default async function ProductListingPage({ params }: PageProps) {
               </div>
             </div>
 
-            <dl className="mt-6 grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-2xl bg-muted/70 px-2 py-3">
-                <dt className="text-[10px] font-medium uppercase tracking-wider text-secondary">Bid</dt>
-                <dd className="mt-0.5 text-[17px] md:text-xl font-semibold tabular-nums">
+            <dl className="mt-6 grid grid-cols-3 gap-6 text-left sm:text-center">
+              <div>
+                <dt className="text-[11px] font-medium uppercase tracking-wider text-secondary">Bid</dt>
+                <dd className="mt-0.5 text-[20px] md:text-2xl font-semibold tabular-nums">
                   ${product.price.toLocaleString()}
                 </dd>
               </div>
-              <div className="rounded-2xl bg-muted/70 px-2 py-3">
-                <dt className="text-[10px] font-medium uppercase tracking-wider text-secondary">Clicks</dt>
-                <dd className="mt-0.5 text-[17px] md:text-xl font-semibold tabular-nums">
+              <div>
+                <dt className="text-[11px] font-medium uppercase tracking-wider text-secondary">Clicks</dt>
+                <dd className="mt-0.5 text-[20px] md:text-2xl font-semibold tabular-nums">
                   {(product.clicks || 0).toLocaleString()}
                 </dd>
               </div>
-              <div className="rounded-2xl bg-muted/70 px-2 py-3">
-                <dt className="text-[10px] font-medium uppercase tracking-wider text-secondary">Hopped</dt>
-                <dd className="mt-0.5 text-[17px] md:text-xl font-semibold">{hopped || "—"}</dd>
+              <div>
+                <dt className="text-[11px] font-medium uppercase tracking-wider text-secondary">Hopped</dt>
+                <dd className="mt-0.5 text-[20px] md:text-2xl font-semibold">{hopped || "—"}</dd>
               </div>
             </dl>
 
@@ -219,7 +219,7 @@ export default async function ProductListingPage({ params }: PageProps) {
                 <VisitSiteButton
                   productId={product.id}
                   href={href}
-                  className="group inline-flex items-center justify-center gap-1.5 bg-foreground text-background px-6 py-2.5 rounded-full text-[15px] font-semibold hover:bg-accent hover:text-foreground transition-colors"
+                  className="group btn-primary inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-full text-[15px] font-semibold"
                 >
                   Visit site
                   <ArrowUpRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -227,14 +227,14 @@ export default async function ProductListingPage({ params }: PageProps) {
               )}
               <Link
                 href={hopPrefill}
-                className="inline-flex items-center justify-center gap-1.5 border border-border bg-white/70 px-6 py-2.5 rounded-full text-[15px] font-semibold text-foreground hover:border-accent/50 hover:text-accent transition-colors"
+                className="btn-glass inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-full text-[15px] font-semibold text-foreground hover:text-accent"
               >
                 Hop this
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <ShareListingButton
                 payload={shareFromProduct(product)}
-                className="inline-flex items-center justify-center gap-1.5 border border-border bg-white/70 px-6 py-2.5 rounded-full text-[15px] font-semibold text-foreground hover:border-accent/50 hover:text-accent transition-colors"
+                className="btn-glass inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-full text-[15px] font-semibold text-foreground hover:text-accent"
               />
             </div>
           </article>

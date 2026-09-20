@@ -5,6 +5,7 @@ export type Product = {
   description: string;
   category: string;
   clicks: number;
+  upvotes?: number;
   price: number;
   url?: string;
   logo_url?: string | null;
