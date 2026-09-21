@@ -6,19 +6,22 @@ export const LOGO_CDN_CACHE_CONTROL = "public, s-maxage=86400, stale-while-reval
 
 export const LOGO_MISS_CACHE_CONTROL = "public, max-age=300, s-maxage=300, stale-while-revalidate=3600";
 
+export function logoCdnHeaders(cacheControl = LOGO_CACHE_CONTROL, cdnControl = LOGO_CDN_CACHE_CONTROL): HeadersInit {
+  return {
+    "Cache-Control": cacheControl,
+    "CDN-Cache-Control": cdnControl,
+    "Vercel-CDN-Cache-Control": cdnControl,
+    "X-Content-Type-Options": "nosniff",
+  };
+}
+
 export function logoHitHeaders(contentType: string): HeadersInit {
   return {
     "Content-Type": contentType,
-    "Cache-Control": LOGO_CACHE_CONTROL,
-    "CDN-Cache-Control": LOGO_CDN_CACHE_CONTROL,
-    "Vercel-CDN-Cache-Control": LOGO_CDN_CACHE_CONTROL,
+    ...logoCdnHeaders(),
   };
 }
 
 export function logoMissHeaders(): HeadersInit {
-  return {
-    "Cache-Control": LOGO_MISS_CACHE_CONTROL,
-    "CDN-Cache-Control": LOGO_MISS_CACHE_CONTROL,
-    "Vercel-CDN-Cache-Control": LOGO_MISS_CACHE_CONTROL,
-  };
+  return logoCdnHeaders(LOGO_MISS_CACHE_CONTROL, LOGO_MISS_CACHE_CONTROL);
 }

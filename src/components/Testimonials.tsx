@@ -2,19 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-
-type HoppyFace = "wink" | "cool" | "angry";
-
-type Testimonial = {
-  name: string;
-  handle: string;
-  date: string;
-  posted: string;
-  comment: string;
-  tint: string;
-  hoppy: HoppyFace;
-  tilt: string;
-};
+import {
+  TESTIMONIALS,
+  xAvatarPath,
+  type HoppyFace,
+  type Testimonial,
+} from "@/lib/testimonials";
 
 const HOPPY: Record<HoppyFace, { src: string; w: number; h: number }> = {
   wink: { src: "/theme/hoppy-wink.png", w: 118, h: 159 },
@@ -28,89 +21,9 @@ function quoteParagraphs(comment: string) {
   return comment.split(/\n+/).map((part) => part.trim()).filter(Boolean);
 }
 
-const TESTIMONIALS: Testimonial[] = [
-  {
-    name: "The Cozy Dev",
-    handle: "The_CozyDev",
-    date: "Sep 21, 2026",
-    posted: "2026-09-21",
-    comment: [
-      "I've listed two of my apps on Hopup.lol now and they've had nearly 1,000 clicks combined, which has genuinely surprised me.",
-      "Adding the listings was incredibly easy, everything feels simple and straightforward, and there's something weirdly addictive about watching the leaderboard and wondering whether someone's about to outbid you for one of the top spots. It turns promotion into something that actually feels fun rather than another boring marketing task.",
-      "I also have to give a special mention to the founder. She's been incredibly kind and supportive towards me over on X, and that means a lot when you're an indie dev trying to put your work out into the world.",
-      "Hopup has quickly become one of those platforms I'm genuinely happy to support. Simple idea, really well executed, and most importantly for me, it's actually sending people to my apps.",
-    ].join("\n"),
-    tint: "tint-orange",
-    hoppy: "wink",
-    tilt: "-rotate-1",
-  },
-  {
-    name: "Maya Chen",
-    handle: "mayabuilds",
-    date: "Aug 12, 2026",
-    posted: "2026-08-12",
-    comment:
-      "Paid $4, went to sleep, woke up at #11. Some guy hopped me at 3am. I hopped him back at breakfast. Most unhinged marketing I've done — and I booked three demos from it.",
-    tint: "tint-bubblegum",
-    hoppy: "wink",
-    tilt: "rotate-1",
-  },
-  {
-    name: "Ravi Patel",
-    handle: "raviships",
-    date: "Aug 28, 2026",
-    posted: "2026-08-28",
-    comment:
-      "Listed my .lol for a dollar because the page said I could. Then I wouldn't shut up about being on the board. Two investors asked what HopUp was. That's the whole pitch.",
-    tint: "tint-grape",
-    hoppy: "cool",
-    tilt: "rotate-1",
-  },
-  {
-    name: "Jules Mora",
-    handle: "julesmora",
-    date: "Sep 3, 2026",
-    posted: "2026-09-03",
-    comment:
-      "Told my cofounder we were not paying $65 to sit on a gold row. We paid $66. Worth it for the screenshot alone.",
-    tint: "tint-butter",
-    hoppy: "angry",
-    tilt: "-rotate-2",
-  },
-  {
-    name: "Theo Park",
-    handle: "theopark",
-    date: "Sep 9, 2026",
-    posted: "2026-09-09",
-    comment:
-      "Put our logo on Aloha's Stanley for $35. A stranger in a cafe asked whose cup that was. I have never had a banner ad do that.",
-    tint: "tint-mint",
-    hoppy: "cool",
-    tilt: "rotate-2",
-  },
-  {
-    name: "Vlad Arbatov",
-    handle: "vladzima",
-    date: "Aug 25, 2026",
-    posted: "2026-08-25",
-    comment:
-      "I will buy and brand anything Aloha says. She is definitely not holding me hostage or anything.",
-    tint: "tint-bubblegum",
-    hoppy: "wink",
-    tilt: "-rotate-1",
-  },
-  {
-    name: "Samir Ali",
-    handle: "samirstacks",
-    date: "Sep 14, 2026",
-    posted: "2026-09-14",
-    comment:
-      "Held #7 for a week, then got hopped. Didn't even mind. The hop notification is the product. People check the board just to see who moved.",
-    tint: "tint-orange",
-    hoppy: "angry",
-    tilt: "rotate-1",
-  },
-];
+function displayNameOf(item: Testimonial, names?: Record<string, string>) {
+  return names?.[item.handle.toLowerCase()] || item.name;
+}
 
 function XMark({ className }: { className?: string }) {
   return (
@@ -120,26 +33,62 @@ function XMark({ className }: { className?: string }) {
   );
 }
 
-function TestimonialMeta({ item }: { item: Testimonial }) {
+function XAvatar({ handle, name }: { handle: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+  const initial = name.trim().charAt(0).toUpperCase() || "?";
+
+  if (failed) {
+    return (
+      <span
+        aria-hidden
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground/8 text-[13px] font-semibold text-foreground"
+      >
+        {initial}
+      </span>
+    );
+  }
+
   return (
-    <header className="pr-14">
-      <p className="text-[16px] font-semibold tracking-tight text-foreground truncate">{item.name}</p>
-      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-        <a
-          href={`https://x.com/${item.handle}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-0.5 text-[12px] font-semibold text-foreground hover:bg-white transition-colors"
-        >
-          <XMark className="h-3 w-3" />
-          @{item.handle}
-        </a>
-        <time
-          className="rounded-full bg-foreground/5 px-2 py-0.5 text-[11px] tabular-nums text-secondary"
-          dateTime={item.posted}
-        >
-          {item.date}
-        </time>
+    <img
+      src={xAvatarPath(handle)}
+      alt=""
+      width={36}
+      height={36}
+      className="h-9 w-9 shrink-0 rounded-full bg-muted object-cover ring-1 ring-border/60"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+function TestimonialMeta({
+  item,
+  displayName,
+}: {
+  item: Testimonial;
+  displayName: string;
+}) {
+  return (
+    <header className="flex items-start gap-2.5 pr-12">
+      <XAvatar handle={item.handle} name={displayName} />
+      <div className="min-w-0">
+        <p className="text-[16px] font-semibold tracking-tight text-foreground truncate">{displayName}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <a
+            href={`https://x.com/${item.handle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-0.5 text-[12px] font-semibold text-foreground hover:bg-white transition-colors"
+          >
+            <XMark className="h-3 w-3" />
+            @{item.handle}
+          </a>
+          <time
+            className="rounded-full bg-foreground/5 px-2 py-0.5 text-[11px] tabular-nums text-secondary"
+            dateTime={item.posted}
+          >
+            {item.date}
+          </time>
+        </div>
       </div>
     </header>
   );
@@ -147,9 +96,11 @@ function TestimonialMeta({ item }: { item: Testimonial }) {
 
 function TestimonialCard({
   item,
+  displayName,
   onSeeMore,
 }: {
   item: Testimonial;
+  displayName: string;
   onSeeMore: (item: Testimonial) => void;
 }) {
   const face = HOPPY[item.hoppy];
@@ -169,7 +120,7 @@ function TestimonialCard({
         className="pointer-events-none absolute -top-4 -right-3 h-16 w-auto select-none drop-shadow-[0_8px_12px_rgba(45,41,38,0.18)] sm:h-[72px]"
       />
 
-      <TestimonialMeta item={item} />
+      <TestimonialMeta item={item} displayName={displayName} />
 
       <p className="mt-3 line-clamp-4 text-[14px] leading-relaxed text-foreground/90">
         “{preview}”
@@ -189,9 +140,11 @@ function TestimonialCard({
 
 function TestimonialModal({
   item,
+  displayName,
   onClose,
 }: {
   item: Testimonial;
+  displayName: string;
   onClose: () => void;
 }) {
   const face = HOPPY[item.hoppy];
@@ -231,7 +184,7 @@ function TestimonialModal({
 
         <div className="flex items-start justify-between gap-3">
           <div id="testimonial-modal-name">
-            <TestimonialMeta item={item} />
+            <TestimonialMeta item={item} displayName={displayName} />
           </div>
           <button
             type="button"
@@ -257,7 +210,11 @@ function TestimonialModal({
   );
 }
 
-export default function Testimonials() {
+export default function Testimonials({
+  displayNames,
+}: {
+  displayNames?: Record<string, string>;
+}) {
   const loop = [...TESTIMONIALS, ...TESTIMONIALS];
   const [open, setOpen] = useState<Testimonial | null>(null);
 
@@ -282,14 +239,24 @@ export default function Testimonials() {
           }`}
         >
           {loop.map((item, i) => (
-            <li key={`${item.handle}-${i}`} className="pt-2">
-              <TestimonialCard item={item} onSeeMore={setOpen} />
+            <li key={`${item.handle}-${item.posted}-${i}`} className="pt-2">
+              <TestimonialCard
+                item={item}
+                displayName={displayNameOf(item, displayNames)}
+                onSeeMore={setOpen}
+              />
             </li>
           ))}
         </ul>
       </div>
 
-      {open && <TestimonialModal item={open} onClose={() => setOpen(null)} />}
+      {open && (
+        <TestimonialModal
+          item={open}
+          displayName={displayNameOf(open, displayNames)}
+          onClose={() => setOpen(null)}
+        />
+      )}
     </section>
   );
 }

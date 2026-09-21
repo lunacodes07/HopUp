@@ -1,10 +1,15 @@
 import * as cheerio from "cheerio";
 import { getProxiedLogoUrl } from "@/lib/logo";
+import { isSafePublicUrl } from "@/lib/resolve-logo";
 
 export async function fetchMetadata(targetUrl: string) {
   let formattedUrl = targetUrl;
   if (!formattedUrl.startsWith("http://") && !formattedUrl.startsWith("https://")) {
     formattedUrl = "https://" + formattedUrl;
+  }
+
+  if (!isSafePublicUrl(formattedUrl)) {
+    return { title: "", description: "", logo: "/globe.svg" };
   }
 
   const fallbackLogo = getProxiedLogoUrl(formattedUrl);

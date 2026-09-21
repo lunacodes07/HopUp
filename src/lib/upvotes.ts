@@ -9,11 +9,11 @@ export function parseVotedIds(value: string | undefined | null): string[] {
     .split(",")
     .map((id) => id.trim())
     .filter((id) => UUID.test(id))
-    .slice(0, 200);
+    .slice(0, 80);
 }
 
 export function serializeVotedIds(ids: string[]): string {
-  return [...new Set(ids)].filter((id) => UUID.test(id)).slice(0, 200).join(",");
+  return [...new Set(ids)].filter((id) => UUID.test(id)).slice(0, 80).join(",");
 }
 
 export function readVotedFromStorage(): string[] {
@@ -40,6 +40,7 @@ export function writeVotedToStorage(ids: string[]) {
 export async function upvoteProduct(productId: string): Promise<{ ok: boolean; already?: boolean; upvotes?: number }> {
   const response = await fetch("/api/upvote", {
     method: "POST",
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ productId }),
   });

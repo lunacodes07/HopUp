@@ -21,7 +21,7 @@ RPCs (not tables): `increment_clicks`, `increment_upvotes`, `increment_page_view
 4. `stanley_slots.sql` — Stanley cup spots + referral kind `stanley`
 5. `stanley_slots_logo.sql` — optional uploaded logo on a Stanley spot + public `stanley-logos` bucket
 6. `products_logo.sql` — optional uploaded logo on a leaderboard listing + public `product-logos` bucket
-7. `product_upvotes.sql` — `products.upvotes` + `increment_upvotes` RPC
+7. `product_upvotes.sql` — `products.upvotes` + `increment_upvotes` / `claim_upvote` RPCs + `product_votes` table
 
 Do not paste `schema.sql` into a database that already has these tables. It is the original create script, not a migration.
 

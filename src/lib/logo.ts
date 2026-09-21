@@ -25,25 +25,29 @@ export function getProxiedLogoUrl(raw?: string | null): string {
   }
 }
 
-/** Leaderboard logo: uploaded override when present, otherwise the site favicon. */
+/** Always a same-origin path so Vercel can cache bytes / validated redirects. */
 export function getProductLogoUrl(product: {
   id?: string;
   url?: string | null;
   logo_url?: string | null;
 }): string {
-  if (product.logo_url) {
-    return product.logo_url;
-  }
-  if (!product.url) return "/globe.svg";
-  try {
-    const href = product.url.startsWith("http") ? product.url : `https://${product.url}`;
-    new URL(href);
-    const params = new URLSearchParams({ url: href });
-    if (product.id) params.set("id", product.id);
+  if (product.id) {
+    const params = new URLSearchParams({ id: product.id });
+    if (product.url) {
+      try {
+        const href = product.url.startsWith("http") ? product.url : `https://${product.url}`;
+        new URL(href);
+        params.set("url", href);
+      } catch {
+        // id-only still hits stored bytes
+      }
+    }
     return `/api/logo?${params}`;
-  } catch {
-    return "/globe.svg";
   }
+  if (product.logo_url) {
+    return `/api/product-logo?u=${encodeURIComponent(product.logo_url)}`;
+  }
+  return getProxiedLogoUrl(product.url);
 }
 
 export function handleLogoError(img: HTMLImageElement, raw?: string | null) {

@@ -52,10 +52,12 @@ export default function LiveLeaderboard({
   page = 1,
   boardMode = "alltime",
   initialProducts = [],
+  initialVoted = [],
 }: {
   page?: number;
   boardMode?: BoardMode;
   initialProducts?: Product[];
+  initialVoted?: string[];
 }) {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("All");
@@ -63,7 +65,7 @@ export default function LiveLeaderboard({
   const [now, setNow] = useState(() => Date.now());
   const [leaderboardData, setLeaderboardData] = useState<Product[]>(initialProducts);
   const [isLoading, setIsLoading] = useState(initialProducts.length === 0);
-  const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
+  const [votedIds, setVotedIds] = useState<Set<string>>(() => new Set(initialVoted));
 
   const ITEMS_PER_PAGE = LISTINGS_PER_PAGE;
   const currentPage = page;
@@ -74,7 +76,7 @@ export default function LiveLeaderboard({
   }, []);
 
   useEffect(() => {
-    setVotedIds(new Set(readVotedFromStorage()));
+    setVotedIds((prev) => new Set([...prev, ...readVotedFromStorage()]));
   }, []);
 
   useEffect(() => {
