@@ -1,5 +1,6 @@
 import { STANLEY_SLOT_COUNT, nextSlotPrice, slotHopAmount, slotPrice } from "@/lib/brand-objects";
 import { getProxiedLogoUrl } from "@/lib/logo";
+import { isOurSupabaseStorageUrl } from "@/lib/supabase-storage-url";
 
 export type StanleySlot = {
   id: string;
@@ -12,18 +13,12 @@ export type StanleySlot = {
 };
 
 function isStanleyStoredLogo(href?: string | null): boolean {
-  if (!href) return false;
-  try {
-    const parsed = new URL(href);
-    return parsed.protocol === "https:" && parsed.pathname.includes("/stanley-logos/");
-  } catch {
-    return false;
-  }
+  return Boolean(href && isOurSupabaseStorageUrl(href, "stanley-logos"));
 }
 
 export function stanleyDisplayLogo(row: Pick<StanleySlot, "url" | "logo_url">): string {
   if (row.logo_url && isStanleyStoredLogo(row.logo_url)) {
-    return row.logo_url;
+    return `/api/stanley-logo?u=${encodeURIComponent(row.logo_url)}`;
   }
   return getProxiedLogoUrl(row.url);
 }

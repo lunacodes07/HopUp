@@ -16,11 +16,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/:all*(png|jpg|jpeg|webp|mp4|glb)",
+        source: "/:all*(png|jpg|jpeg|webp|gif|avif|mp4|glb)",
         headers: cacheHeaders(PUBLIC_CACHE),
       },
       {
-        source: "/:all*(svg|ico)",
+        source: "/:all*(svg|ico|woff|woff2)",
         headers: cacheHeaders(YEAR_CACHE),
       },
     ];

@@ -5,6 +5,7 @@ import { getStoredProductLogo, isStoredProductLogoUrl } from "@/lib/product-logo
 import { rasterLogoDataUri } from "@/lib/resolve-logo";
 import { rankLabel } from "@/lib/share";
 import { supabaseServer } from "@/lib/supabase-server";
+import { LOGO_CACHE_CONTROL, LOGO_CDN_CACHE_CONTROL } from "@/lib/logo-cache-headers";
 
 export const SHARE_CARD_SIZE = { width: 1200, height: 630 };
 
@@ -329,6 +330,11 @@ export async function shareCardImage(card: ShareCardInput) {
     new ImageResponse(shareCardElement({ ...card, logoSrc, hopupLogoSrc: brandLogo }), {
       ...SHARE_CARD_SIZE,
       fonts: loaded,
+      headers: {
+        "Cache-Control": LOGO_CACHE_CONTROL,
+        "CDN-Cache-Control": LOGO_CDN_CACHE_CONTROL,
+        "Vercel-CDN-Cache-Control": LOGO_CDN_CACHE_CONTROL,
+      },
     });
 
   try {

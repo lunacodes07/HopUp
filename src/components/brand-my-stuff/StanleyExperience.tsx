@@ -410,7 +410,7 @@ export default function StanleyExperience({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-8 md:mt-1 rounded-3xl border border-white/70 bg-white/50 backdrop-blur p-5 md:p-6 text-left"
+            className="mt-8 md:mt-1 text-left"
           >
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-secondary">
               Where it goes
@@ -421,7 +421,7 @@ export default function StanleyExperience({
 
             <Link
               href="/brandmystuff"
-              className="group mt-5 flex items-center gap-3 rounded-2xl border border-border/70 bg-white/70 px-3 py-2.5 transition-colors hover:border-accent/50"
+              className="group mt-5 flex items-center gap-3 px-0 py-1 transition-colors"
             >
               <span className="w-11 h-11 shrink-0">
                 <ObjectArt slug="brandmylaptop" tint="#9AB0C4" />

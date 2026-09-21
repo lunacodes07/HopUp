@@ -4,78 +4,92 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+type BoardStats = {
+  clicks: number;
+  hopped: number;
+  bid: number;
+};
+
 export default function WhyFounders() {
-  const [totalClicks, setTotalClicks] = useState<number | null>(null);
+  const [stats, setStats] = useState<BoardStats | null>(null);
 
   useEffect(() => {
-    const fetchClicks = async () => {
+    const fetchStats = async () => {
       try {
         const [{ data: analyticsData }, { data: productsData }] = await Promise.all([
           supabase.from("analytics").select("total_visits").limit(1).single(),
-          supabase.from("products").select("clicks"),
+          supabase.from("products").select("clicks, price"),
         ]);
 
         const pageVisits = analyticsData?.total_visits || 0;
-        const productClicks = productsData?.reduce((acc, p) => acc + p.clicks, 0) || 0;
+        const productClicks = productsData?.reduce((acc, p) => acc + (p.clicks || 0), 0) || 0;
 
-        setTotalClicks(pageVisits + productClicks);
+        setStats({
+          clicks: pageVisits + productClicks,
+          hopped: productsData?.length || 0,
+          bid: productsData?.reduce((acc, p) => acc + (p.price || 0), 0) || 0,
+        });
       } catch (err) {
-        console.error("Failed to fetch exact clicks", err);
+        console.error("Failed to fetch board stats", err);
       }
     };
-    fetchClicks();
+    fetchStats();
   }, []);
 
   return (
-    <section className="w-full px-4 md:px-8 py-16 md:py-20 flex flex-col items-center">
-      <div className="max-w-[1000px] w-full flex flex-col items-center text-center">
-        <motion.h2
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.5 }}
-          className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-3"
-        >
-          Why would anyone do this?
-        </motion.h2>
+    <section className="w-full px-4 md:px-8 py-14 md:py-16 flex flex-col items-center">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="relative page-wide px-2 md:px-4 flex flex-col items-center text-center"
+      >
+        <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-3">
+          Why hop?
+        </h2>
 
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.5, delay: 0.05 }}
-          className="text-4xl md:text-5xl font-semibold tracking-tight text-accent mb-4"
-        >
-          Attention.
-        </motion.p>
+        <p className="relative text-4xl md:text-5xl font-semibold tracking-tight text-accent mb-4">
+          More eyes. A backlink.
+          <span
+            aria-hidden
+            className="absolute -right-5 -top-2 h-3 w-3 rounded-full bg-butter shadow-[0_0_0_4px_rgba(255,212,71,0.25)]"
+          />
+        </p>
 
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-base md:text-lg text-secondary max-w-[480px] leading-relaxed mb-8"
-        >
-          A few dollars puts your product in front of people who would never have found you otherwise.
-        </motion.p>
+        <p className="text-base md:text-lg text-secondary max-w-[520px] leading-relaxed mb-8">
+          Every listing is a public page with your link on it. A few dollars puts you on a live board people actually scroll.
+        </p>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2 text-base text-secondary">
-          <span>
-            <span className="font-semibold text-foreground tabular-nums text-lg">
-              {totalClicks !== null ? totalClicks.toLocaleString() : "—"}
-            </span>{" "}
-            clicks
-          </span>
-          <span className="text-border hidden sm:inline">·</span>
-          <span>
-            <span className="font-semibold text-foreground tabular-nums text-lg">250+</span> signups
-          </span>
-          <span className="text-border hidden sm:inline">·</span>
-          <span>
-            <span className="font-semibold text-foreground tabular-nums text-lg">95+</span> demo calls
-          </span>
+        <div className="flex flex-wrap items-center justify-center gap-2 text-[15px] text-secondary">
+          {[
+            {
+              value: stats ? stats.clicks.toLocaleString() : "—",
+              label: "clicks sent",
+              dot: "bg-accent",
+            },
+            {
+              value: stats ? stats.hopped.toLocaleString() : "—",
+              label: "products hopped",
+              dot: "bg-grape",
+            },
+            {
+              value: stats ? `$${stats.bid.toLocaleString()}` : "—",
+              label: "bid on the board",
+              dot: "bg-butter",
+            },
+          ].map((stat) => (
+            <span
+              key={stat.label}
+              className="inline-flex items-center gap-2 px-1.5 py-1"
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${stat.dot}`} />
+              <span className="font-semibold text-foreground tabular-nums text-lg">{stat.value}</span>
+              {stat.label}
+            </span>
+          ))}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

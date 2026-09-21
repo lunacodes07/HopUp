@@ -7,6 +7,7 @@ import {
 } from "@/lib/product-logo-server";
 import { isSafePublicUrl, resolveLogo } from "@/lib/resolve-logo";
 import { logoHitHeaders, logoMissHeaders } from "@/lib/logo-cache-headers";
+import { logoRateLimited } from "@/lib/logo-rate-limit";
 
 export const revalidate = 86400;
 
@@ -40,6 +41,10 @@ async function persistResolvedLogo(productId: string, image: { body: ArrayBuffer
 }
 
 export async function GET(request: Request) {
+  if (await logoRateLimited(request)) {
+    return globe(request);
+  }
+
   const params = new URL(request.url).searchParams;
   const raw = params.get("url") || "";
   const productId = params.get("id") || "";

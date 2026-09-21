@@ -270,7 +270,7 @@ async function fetchSafe(
   return null;
 }
 
-async function fetchImage(src: string): Promise<LogoImage | null> {
+export async function fetchRemoteImage(src: string): Promise<LogoImage | null> {
   if (!isSafePublicUrl(src)) return null;
   try {
     const res = await fetchSafe(
@@ -412,21 +412,21 @@ async function resolveLogoUncached(raw: string): Promise<LogoImage | null> {
   for (const src of await storeArtworkUrls(host, pageUrl)) {
     if (!src || seen.has(src)) continue;
     seen.add(src);
-    const hit = take(await fetchImage(src));
+    const hit = take(await fetchRemoteImage(src));
     if (hit) return hit;
   }
 
   for (const src of serviceCandidates(host, pageUrl)) {
     if (!src || seen.has(src)) continue;
     seen.add(src);
-    const hit = take(await fetchImage(src));
+    const hit = take(await fetchRemoteImage(src));
     if (hit) return hit;
   }
 
   for (const src of await iconsFromPage(pageUrl)) {
     if (!src || seen.has(src)) continue;
     seen.add(src);
-    const hit = take(await fetchImage(src));
+    const hit = take(await fetchRemoteImage(src));
     if (hit) return hit;
   }
 

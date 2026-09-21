@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isStoredStanleyLogoUrl } from "@/lib/stanley-logo-server";
-import { logoMissHeaders } from "@/lib/logo-cache-headers";
+import { logoCdnHeaders, logoMissHeaders } from "@/lib/logo-cache-headers";
 
 export const revalidate = 86400;
 
@@ -20,8 +20,9 @@ export async function GET(request: Request) {
   }
 
   const response = NextResponse.redirect(raw, 308);
-  response.headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
-  response.headers.set("CDN-Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
-  response.headers.set("Vercel-CDN-Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
+  const cached = logoCdnHeaders();
+  for (const [key, value] of Object.entries(cached)) {
+    response.headers.set(key, value);
+  }
   return response;
 }

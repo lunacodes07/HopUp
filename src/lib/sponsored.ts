@@ -1,4 +1,4 @@
-export const SPONSOR_SLOT_COUNT = 4;
+export const SPONSOR_SLOT_COUNT = 2;
 
 export const SPONSOR_PLANS = [
   { weeks: 1, price: 30, label: "1 week", hint: "Standard" },

@@ -3,69 +3,83 @@ import { TinyshelfBadge } from "./TinyshelfBadge";
 
 export default function Footer() {
   return (
-    <footer className="w-full border-t border-border/50 px-4 md:px-8 py-8 flex flex-col items-center">
-      <div className="w-full max-w-[1000px] flex flex-col items-center gap-4 md:flex-row md:justify-between md:items-center">
-        <Link href="/" className="text-base font-semibold tracking-tight">
-          HopUp.<span className="text-accent">lol</span>
-        </Link>
+    <footer className="w-full mt-2 border-t border-foreground/10 px-5 md:px-10 lg:px-14 py-6 md:py-7">
+      <div className="w-full flex flex-col items-center gap-5">
+        <div className="w-full flex flex-col items-center gap-4 lg:flex-row lg:justify-between lg:items-center">
+          <Link href="/" className="group flex items-center gap-2 text-base font-semibold tracking-tight">
+            <img
+              src="/theme/hoppy-wink.png"
+              alt=""
+              width={118}
+              height={159}
+              className="h-9 w-auto -my-1 animate-hoppy-bob select-none transition-transform group-hover:scale-110"
+            />
+            <span>
+              HopUp.<span className="text-accent">lol</span>
+            </span>
+          </Link>
 
-        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-medium text-secondary">
-          <Link href="/#leaderboard" className="hover:text-foreground transition-colors">
-            Leaderboard
-          </Link>
-          <Link href="/p" className="hover:text-foreground transition-colors">
-            Listings
-          </Link>
-          <Link href="/#pricing" className="hover:text-foreground transition-colors">
-            Pricing
-          </Link>
-          <Link href="/contact" className="hover:text-foreground transition-colors">
-            Contact
-          </Link>
-          <Link href="/terms" className="hover:text-foreground transition-colors">
-            Terms
-          </Link>
-          <Link href="/privacy" className="hover:text-foreground transition-colors">
-            Privacy
-          </Link>
-          <Link href="/refunds" className="hover:text-foreground transition-colors">
-            Refunds
-          </Link>
-        </nav>
+          <nav className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1 text-sm font-medium text-secondary">
+            {[
+              ["/#leaderboard", "Leaderboard"],
+              ["/p", "Listings"],
+              ["/#testimonials", "Testimonials"],
+              ["/contact", "Contact"],
+              ["/terms", "Terms"],
+              ["/privacy", "Privacy"],
+              ["/refunds", "Refunds"],
+            ].map(([href, label]) => (
+              <Link
+                key={href}
+                href={href}
+                className="rounded-full px-2.5 py-1 transition-colors hover:bg-white/70 hover:text-foreground"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
 
-        <span className="text-xs text-secondary/60">© 2026</span>
-      </div>
+          <span className="inline-flex items-center gap-1.5 text-xs text-secondary/70">
+            <span className="inline-flex gap-0.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              <span className="h-1.5 w-1.5 rounded-full bg-grape" />
+              <span className="h-1.5 w-1.5 rounded-full bg-butter" />
+            </span>
+            © 2026
+          </span>
+        </div>
 
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-        <a
-          href="https://www.producthunt.com/products/hopup?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-hopup"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="opacity-90 transition-opacity hover:opacity-100"
-        >
-          <img
-            alt="HopUp - Your Product Deserves a Better Spot | Product Hunt"
-            width={180}
-            height={39}
-            className="h-8 w-auto"
-            src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1238456&theme=light&t=1788265340921"
-          />
-        </a>
-        <TinyshelfBadge />
-        <a
-          href="https://frogdr.com/hopup.lol?utm_source=hopup.lol"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="opacity-90 transition-opacity hover:opacity-100"
-        >
-          <img
-            alt="Monitor your Domain Rating with FrogDR"
-            width={250}
-            height={54}
-            className="h-11 w-auto"
-            src="https://frogdr.com/hopup.lol/badge-white.svg?badge=1&round=1"
-          />
-        </a>
+        <div className="flex w-full flex-nowrap items-center justify-center gap-1.5 sm:gap-3 overflow-x-auto no-scrollbar">
+          <a
+            href="https://www.producthunt.com/products/hopup?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-hopup"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 opacity-90 transition-opacity hover:opacity-100"
+          >
+            <img
+              alt="HopUp - Your Product Deserves a Better Spot | Product Hunt"
+              width={180}
+              height={39}
+              className="h-[22px] sm:h-8 w-auto"
+              src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1238456&theme=light&t=1788265340921"
+            />
+          </a>
+          <TinyshelfBadge className="h-[22px] sm:h-8 w-auto" />
+          <a
+            href="https://frogdr.com/hopup.lol?utm_source=hopup.lol"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 opacity-90 transition-opacity hover:opacity-100"
+          >
+            <img
+              alt="Monitor your Domain Rating with FrogDR"
+              width={250}
+              height={54}
+              className="h-[26px] sm:h-11 w-auto"
+              src="https://frogdr.com/hopup.lol/badge-white.svg?badge=1&round=1"
+            />
+          </a>
+        </div>
       </div>
     </footer>
   );

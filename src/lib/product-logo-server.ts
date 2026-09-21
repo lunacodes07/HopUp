@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase-server";
+import { isOurSupabaseStorageUrl } from "@/lib/supabase-storage-url";
 
 const BUCKET = "product-logos";
 const MAX_BYTES = 1_200_000;
@@ -53,12 +54,7 @@ export function publicUrlForProductLogo(path: string): string {
 }
 
 export function isStoredProductLogoUrl(href: string): boolean {
-  try {
-    const parsed = new URL(href);
-    return parsed.protocol === "https:" && parsed.pathname.includes(`/${BUCKET}/`);
-  } catch {
-    return false;
-  }
+  return isOurSupabaseStorageUrl(href, BUCKET);
 }
 
 async function saveProductLogoUrl(productId: string, publicUrl: string) {
