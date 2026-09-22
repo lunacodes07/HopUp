@@ -28,6 +28,17 @@ export const TESTIMONIALS: Testimonial[] = [
     tilt: "-rotate-1",
   },
   {
+    name: "Nick | Afterimage",
+    handle: "AfterimageDev",
+    date: "Sep 22, 2026",
+    posted: "2026-09-22",
+    comment:
+      "Was very easy getting listed, and I'm getting good traffic (and vertigo) from being high up the board!",
+    tint: "tint-butter",
+    hoppy: "wink",
+    tilt: "rotate-1",
+  },
+  {
     name: "Parth Sharma",
     handle: "Ksparth12",
     date: "Sep 21, 2026",
