@@ -1,4 +1,6 @@
 import type { Product } from "@/types";
+import { productPath } from "@/lib/product-path";
+import { SITE_URL } from "@/lib/site";
 
 export type ShareKind = "hop" | "sponsored";
 
@@ -7,6 +9,8 @@ export type SharePayload = {
   rank: number;
   price: number;
   url?: string;
+  /** Absolute listing URL. This is the link X should unfurl. */
+  pageUrl?: string;
   id?: string;
   kind?: ShareKind;
 };
@@ -21,7 +25,7 @@ export function shareCaption(payload: SharePayload) {
 
   if (payload.kind === "sponsored") {
     return [
-      `just grabbed a sponsored spot on hopup.lol by @alohaproxy`,
+      `just grabbed a sponsored spot on HopUp by @alohaproxy`,
       ``,
       `${payload.name} · ${bid}`,
     ].join("\n");
@@ -29,7 +33,7 @@ export function shareCaption(payload: SharePayload) {
 
   if (payload.rank === 0) {
     return [
-      `just claimed Hall of Fame on hopup.lol by @alohaproxy`,
+      `just claimed Hall of Fame on HopUp by @alohaproxy`,
       ``,
       `${payload.name} · ${bid}`,
       ``,
@@ -38,7 +42,7 @@ export function shareCaption(payload: SharePayload) {
   }
 
   return [
-    `just hopped ${payload.name} to ${spot} on hopup.lol by @alohaproxy`,
+    `just hopped ${payload.name} to ${spot} on HopUp by @alohaproxy`,
     ``,
     `${bid} → ${spot}`,
     ``,
@@ -46,8 +50,10 @@ export function shareCaption(payload: SharePayload) {
   ].join("\n");
 }
 
-export function xShareUrl(caption: string) {
-  return `https://x.com/intent/tweet?${new URLSearchParams({ text: caption })}`;
+export function xShareUrl(caption: string, pageUrl?: string) {
+  const params = new URLSearchParams({ text: caption });
+  if (pageUrl) params.set("url", pageUrl);
+  return `https://x.com/intent/tweet?${params.toString()}`;
 }
 
 export function shareImagePath(payload: SharePayload) {
@@ -68,6 +74,7 @@ export function shareFromProduct(product: Product, kind: ShareKind = "hop"): Sha
     rank: product.rank,
     price: product.price,
     url: product.url,
+    pageUrl: `${SITE_URL}${productPath(product)}`,
     id: product.id,
     kind,
   };

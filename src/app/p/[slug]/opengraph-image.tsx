@@ -2,7 +2,7 @@ import { displayHost } from "@/lib/product-path";
 import { findProductBySlug, getRankedProducts, withBoardRanks } from "@/lib/products-server";
 import { SHARE_CARD_SIZE, shareCardImage } from "@/lib/share-card";
 
-export const alt = "HopUp listing";
+export const alt = "Listing";
 export const size = SHARE_CARD_SIZE;
 export const contentType = "image/png";
 export const revalidate = 86400;
