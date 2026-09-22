@@ -132,7 +132,7 @@ export default function ShareHopModal({
           </DownloadCardButton>
 
           <a
-            href={xShareUrl(caption)}
+            href={xShareUrl(caption, payload.pageUrl)}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-2 flex items-center justify-center gap-2 w-full border border-border bg-white/80 px-5 py-3 rounded-full text-[15px] font-semibold text-foreground hover:border-accent/50 hover:text-accent transition-colors"
@@ -142,7 +142,7 @@ export default function ShareHopModal({
           </a>
 
           <p className="mt-2 text-center text-[12px] text-secondary">
-            X only prefills the caption. Attach the PNG after you download it.
+            The post links this listing, so X shows this card.
           </p>
 
           <button

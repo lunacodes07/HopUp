@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { ListingUpvoteButton, ListingUpvoteStat, ListingVote } from "@/components/ListingUpvote";
 import VisitSiteButton from "@/components/VisitSiteButton";
 import { getProductLogoUrl } from "@/lib/logo";
 import { displayHost, productPath, productSlug, toExternalUrl } from "@/lib/product-path";
@@ -11,6 +13,7 @@ import { findProductBySlug, getRankedProducts, withBoardRanks } from "@/lib/prod
 import ShareListingButton from "@/components/ShareListingButton";
 import { shareFromProduct } from "@/lib/share";
 import { SITE_URL } from "@/lib/site";
+import { parseVotedIds, UPVOTE_COOKIE } from "@/lib/upvotes";
 import { getTimeAgo } from "@/lib/time-ago";
 import type { Product } from "@/types";
 
@@ -46,21 +49,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const description =
       product.description ||
       `${product.name} is listed on HopUp${product.category ? ` in ${product.category}` : ""}.`;
+    const pageUrl = `${SITE_URL}${productPath(product)}`;
+    const card = {
+      url: `${pageUrl}/opengraph-image`,
+      width: 1200,
+      height: 630,
+      alt: product.name,
+    };
 
     return {
       title,
       description,
-      alternates: { canonical: `${SITE_URL}${productPath(product)}` },
+      alternates: { canonical: pageUrl },
       openGraph: {
         title,
         description,
-        url: `${SITE_URL}${productPath(product)}`,
+        url: pageUrl,
         type: "website",
+        images: [card],
       },
       twitter: {
         card: "summary_large_image",
         title,
         description,
+        images: [card],
       },
     };
   } catch {
@@ -103,6 +115,7 @@ export default async function ProductListingPage({ params }: PageProps) {
   const nearby = nearbyListings(ranked, product.id);
   const hopped = getTimeAgo(product.last_hopped_at || product.created_at);
   const hopPrefill = href ? `/?hop=${encodeURIComponent(href)}` : "/";
+  const alreadyVoted = parseVotedIds((await cookies()).get(UPVOTE_COOKIE)?.value).includes(product.id);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -179,7 +192,8 @@ export default async function ProductListingPage({ params }: PageProps) {
               </div>
             </div>
 
-            <dl className="mt-6 grid grid-cols-3 gap-6 text-left sm:text-center">
+            <ListingVote productId={product.id} count={product.upvotes || 0} initialVoted={alreadyVoted}>
+            <dl className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-6 text-left sm:text-center">
               <div>
                 <dt className="text-[11px] font-medium uppercase tracking-wider text-secondary">Bid</dt>
                 <dd className="mt-0.5 text-[20px] md:text-2xl font-semibold tabular-nums">
@@ -192,6 +206,7 @@ export default async function ProductListingPage({ params }: PageProps) {
                   {(product.clicks || 0).toLocaleString()}
                 </dd>
               </div>
+              <ListingUpvoteStat />
               <div>
                 <dt className="text-[11px] font-medium uppercase tracking-wider text-secondary">Hopped</dt>
                 <dd className="mt-0.5 text-[20px] md:text-2xl font-semibold">{hopped || "—"}</dd>
@@ -225,6 +240,7 @@ export default async function ProductListingPage({ params }: PageProps) {
                   <ArrowUpRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </VisitSiteButton>
               )}
+              <ListingUpvoteButton />
               <Link
                 href={hopPrefill}
                 className="btn-glass inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-full text-[15px] font-semibold text-foreground hover:text-accent"
@@ -237,6 +253,7 @@ export default async function ProductListingPage({ params }: PageProps) {
                 className="btn-glass inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-full text-[15px] font-semibold text-foreground hover:text-accent"
               />
             </div>
+            </ListingVote>
           </article>
 
           {nearby.length > 0 && (
