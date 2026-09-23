@@ -3,29 +3,16 @@ import { notFound, redirect } from "next/navigation";
 import {
   type BoardMode,
   boardCanonicalPath,
-  boardSize,
   parsePageParam,
   totalPagesFor,
 } from "@/lib/pagination";
 import { getRankedProducts } from "@/lib/products-server";
 import { SITE_URL } from "@/lib/site";
+import { boardList } from "@/lib/week";
 import type { Product } from "@/types";
 
-const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
-
-function hoppedAt(item: Product) {
-  return new Date(item.last_hopped_at || item.created_at || 0).getTime();
-}
-
-export function recentCount(products: Product[]) {
-  const cutoff = Date.now() - FORTY_EIGHT_HOURS_MS;
-  const board = products.length >= 2 ? products.slice(1) : products;
-  return board.filter((item) => hoppedAt(item) >= cutoff).length;
-}
-
-export function pageCountForMode(mode: BoardMode, products: Product[]) {
-  const count = mode === "recent" ? recentCount(products) : boardSize(products.length);
-  return totalPagesFor(count);
+export function pageCountForMode(mode: BoardMode, products: Product[], now = Date.now()) {
+  return totalPagesFor(boardList(products, mode, now).length);
 }
 
 export async function loadBoardProducts() {
@@ -35,8 +22,8 @@ export async function loadBoardProducts() {
 export async function resolveBoardPage(mode: BoardMode, rawPage?: string) {
   const page = parsePageParam(rawPage ?? "1");
   if (!page) notFound();
-  if (mode === "alltime" && page === 1) redirect("/");
-  if (mode === "recent" && rawPage && page === 1) redirect("/last-48-hours");
+  if (mode === "week" && page === 1) redirect("/");
+  if (mode === "alltime" && rawPage && page === 1) redirect("/all-time");
 
   const products = await loadBoardProducts();
   if (page > pageCountForMode(mode, products)) notFound();
@@ -52,12 +39,12 @@ export function boardPageParams(mode: BoardMode, products: Product[]) {
 }
 
 export function boardMetadata(mode: BoardMode, page: number): Metadata {
-  const label = mode === "recent" ? "Last 48 hours" : "All time";
+  const label = mode === "week" ? "This week" : "All time";
   const title = page <= 1 ? `${label} — HopUp` : `${label} — page ${page} — HopUp`;
   const description =
-    mode === "recent"
-      ? "Products that hopped on HopUp in the last 48 hours."
-      : "The HopUp all-time leaderboard. Pay once. Rank higher.";
+    mode === "week"
+      ? "Ranked by what you paid this week. $2 gets you on here for 7 days."
+      : "Ranked by total paid. The page stays.";
   const url = `${SITE_URL}${boardCanonicalPath(mode, page)}`;
 
   return {

@@ -7,6 +7,8 @@ export type Product = {
   clicks: number;
   upvotes?: number;
   price: number;
+  week_bid?: number | null;
+  is_hof?: boolean | null;
   url?: string;
   logo_url?: string | null;
   created_at?: string;

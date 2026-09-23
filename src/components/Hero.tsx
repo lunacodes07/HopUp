@@ -1,26 +1,18 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, Minus, Plus, Loader2, ChevronDown, Upload, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 import { DEFAULT_MIN_BID, LOL_MIN_BID, minBidForUrl } from "@/lib/bid";
-import { DEFAULT_CATEGORY, PRODUCT_CATEGORIES } from "@/lib/categories";
+import { DEFAULT_CATEGORY, isProductCategory, PRODUCT_CATEGORIES } from "@/lib/categories";
 import { hallOfFameClaimPrice } from "@/lib/hof";
+import { claimWeekPrice, findHof, topWeekBid } from "@/lib/week";
 import { rememberPendingShare } from "@/lib/share";
 import LiveStats from "./LiveStats";
 import Ticker from "./Ticker";
-
-const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
-
-const hoppedAt = (item: Product) =>
-  new Date(item.last_hopped_at || item.created_at || 0).getTime();
-
-const matchesUrl = (productUrl: string | undefined, finalUrl: string) =>
-  productUrl?.replace(/\/$/, "").toLowerCase() === finalUrl.toLowerCase();
 
 const getFormattedUrlInfo = (rawUrl: string) => {
   let finalUrl = rawUrl.trim();
@@ -41,7 +33,6 @@ const getFormattedUrlInfo = (rawUrl: string) => {
 };
 
 export default function Hero() {
-  const router = useRouter();
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState<string>(DEFAULT_CATEGORY);
   const [bidAmount, setBidAmount] = useState(DEFAULT_MIN_BID);
@@ -66,14 +57,22 @@ export default function Hero() {
 
   const fetchData = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const columns = "id, url, category, price, week_bid, is_hof, last_hopped_at, created_at";
+      const full = await supabase
         .from("products")
-        .select("id, url, price, last_hopped_at, created_at")
+        .select(columns)
         .order("price", { ascending: false })
         .order("created_at", { ascending: true });
+      const result = full.error
+        ? await supabase
+            .from("products")
+            .select("id, url, category, price, last_hopped_at, created_at")
+            .order("price", { ascending: false })
+            .order("created_at", { ascending: true })
+        : full;
 
-      if (error) throw error;
-      if (data) setLeaderboardData(data as Product[]);
+      if (result.error) throw result.error;
+      if (result.data) setLeaderboardData(result.data as Product[]);
     } catch (err) {
       console.error("Failed to fetch products for rank preview:", err);
     }
@@ -103,6 +102,9 @@ export default function Hero() {
       if (!e.detail) return;
       const nextUrl = typeof e.detail.url === "string" ? e.detail.url : undefined;
       if (nextUrl) setUrl(nextUrl);
+      if (typeof e.detail.category === "string" && isProductCategory(e.detail.category)) {
+        setCategory(e.detail.category);
+      }
       if (typeof e.detail.price === "number") {
         applyBid(e.detail.price, {
           lockMin: e.detail.lockMin ? e.detail.price : 0,
@@ -162,6 +164,7 @@ export default function Hero() {
           category,
           nameFallback,
           ...(logoDataUrl ? { logoDataUrl } : {}),
+          ...(claimingHof ? { hof: true } : {}),
         }),
       });
 
@@ -197,140 +200,17 @@ export default function Hero() {
     }
   };
 
-  const champion = useMemo(() => {
-    if (leaderboardData.length < 2) return null;
-    return leaderboardData.reduce((top, p) => (p.price > top.price ? p : top));
-  }, [leaderboardData]);
+  const pinned = useMemo(() => findHof(leaderboardData), [leaderboardData]);
+  const weekTop = useMemo(() => topWeekBid(leaderboardData), [leaderboardData]);
+  const claimThisWeek = claimWeekPrice(weekTop, urlFloor);
+  const weekHasLeader = weekTop > 0;
+  const hofPrice = pinned ? hallOfFameClaimPrice(pinned.price) : 0;
 
-  const champId = champion?.id ?? null;
-
-  const activeBoard = useMemo(
-    () => (champId ? leaderboardData.filter((p) => p.id !== champId) : leaderboardData),
-    [leaderboardData, champId]
-  );
-
-  const recentBoard = useMemo(() => {
-    const cutoff = Date.now() - FORTY_EIGHT_HOURS_MS;
-    return activeBoard.filter((p) => hoppedAt(p) >= cutoff);
-  }, [activeBoard]);
-
-  const rankOnBoard = useCallback(
-    (board: Product[], bid: number) => {
-      let totalBid = bid;
-      let existingProductId: string | null = null;
-
-      if (url.trim()) {
-        const { finalUrl } = getFormattedUrlInfo(url);
-        const existingProduct = leaderboardData.find((p) => matchesUrl(p.url, finalUrl));
-        if (existingProduct) {
-          totalBid = existingProduct.price + bid;
-          existingProductId = existingProduct.id;
-        }
-      }
-
-      return (
-        board.filter((p) => {
-          if (existingProductId && p.id === existingProductId) return false;
-          return p.price >= totalBid;
-        }).length + 1
-      );
-    },
-    [leaderboardData, url]
-  );
-
-  const expectedRank = useMemo(
-    () => rankOnBoard(activeBoard, bidAmount),
-    [rankOnBoard, activeBoard, bidAmount]
-  );
-
-  const expectedRecentRank = useMemo(
-    () => rankOnBoard(recentBoard, bidAmount),
-    [rankOnBoard, recentBoard, bidAmount]
-  );
-
-  const rankForTwoRecent = useMemo(
-    () => rankOnBoard(recentBoard, urlFloor),
-    [rankOnBoard, recentBoard, urlFloor]
-  );
-
-  const amountForRank1 = useMemo(() => {
-    if (activeBoard.length === 0) return urlFloor;
-
-    const topPrice = Math.max(...activeBoard.map((p) => p.price));
-
-    let currentPrice = 0;
-    if (url.trim()) {
-      const { finalUrl } = getFormattedUrlInfo(url);
-      const existingProduct = activeBoard.find((p) => matchesUrl(p.url, finalUrl));
-      if (existingProduct) {
-        currentPrice = existingProduct.price;
-        const othersTop = activeBoard.filter((p) => p.id !== existingProduct.id && p.price >= topPrice);
-        if (othersTop.length === 0 && currentPrice === topPrice) {
-          return urlFloor;
-        }
-      }
-    }
-
-    const requiredTotal = topPrice + 1;
-    const requiredAdditionalBid = requiredTotal - currentPrice;
-
-    return Math.max(urlFloor, requiredAdditionalBid);
-  }, [activeBoard, url, urlFloor]);
-
-  const amountForRecentRank1 = useMemo(() => {
-    if (recentBoard.length === 0) return urlFloor;
-
-    const topPrice = Math.max(...recentBoard.map((p) => p.price));
-
-    let currentPrice = 0;
-    if (url.trim()) {
-      const { finalUrl } = getFormattedUrlInfo(url);
-      const existingProduct = activeBoard.find((p) => matchesUrl(p.url, finalUrl));
-      if (existingProduct) {
-        currentPrice = existingProduct.price;
-        const othersTop = recentBoard.filter((p) => p.id !== existingProduct.id && p.price >= topPrice);
-        if (othersTop.length === 0 && currentPrice === topPrice) {
-          return urlFloor;
-        }
-      }
-    }
-
-    return Math.max(urlFloor, topPrice + 1 - currentPrice);
-  }, [recentBoard, activeBoard, url, urlFloor]);
-
-  const matchedListing = useMemo(() => {
-    if (!url.trim()) return null;
-    const { finalUrl } = getFormattedUrlInfo(url);
-    return leaderboardData.find((p) => matchesUrl(p.url, finalUrl)) ?? null;
-  }, [url, leaderboardData]);
-
-  const rank1 = activeBoard[0] ?? null;
-  const isBoardRank1 = Boolean(matchedListing && rank1 && matchedListing.id === rank1.id);
-
-  const amountToTakeHof = useMemo(() => {
-    if (!champion) return urlFloor;
-    return Math.max(urlFloor, hallOfFameClaimPrice(champion.price) - (matchedListing?.price ?? 0));
-  }, [champion, matchedListing, urlFloor]);
-
-  const showHofTarget = Boolean(champion && (claimingHof || isBoardRank1));
-
-  // After "claim HOF", hops on an existing listing only need the remaining bump.
   useEffect(() => {
-    if (!claimingHof || !champion) return;
-    setLockedMin(amountToTakeHof);
-    setBidAmount(amountToTakeHof);
-  }, [claimingHof, matchedListing?.id, amountToTakeHof, champion]);
-
-  const projectedTotal = useMemo(() => {
-    if (!matchedListing) return bidAmount;
-    return matchedListing.price + bidAmount;
-  }, [bidAmount, matchedListing]);
-
-  const wouldTakeHof = Boolean(champion && projectedTotal > champion.price);
-
-  const showRecentBoard = () => {
-    router.push("/last-48-hours#leaderboard");
-  };
+    if (!claimingHof || !pinned) return;
+    setLockedMin(hofPrice);
+    setBidAmount(hofPrice);
+  }, [claimingHof, pinned, hofPrice]);
 
   return (
     <section className="relative w-full px-4 md:px-8 lg:px-16 pt-20 md:pt-24 pb-3 md:pb-4">
@@ -369,7 +249,7 @@ export default function Hero() {
               Your product deserves <span className="text-accent">more eyes.</span>
             </h1>
             <p className="text-base md:text-lg lg:text-[22px] text-secondary">
-              A backlink on every listing. Pay once. Rank higher.
+              A permanent listing and a backlink. Pay once.
             </p>
           </motion.div>
 
@@ -377,43 +257,31 @@ export default function Hero() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col items-center lg:items-end text-center lg:text-right shrink-0 lg:max-w-[420px]"
+            className="flex flex-col items-center lg:items-end text-center lg:text-right shrink-0"
           >
             <button
               type="button"
               onClick={() => {
-                applyBid(
-                  showHofTarget ? amountToTakeHof : amountForRank1,
-                  showHofTarget ? { lockMin: amountToTakeHof, hof: true } : undefined
-                );
+                applyBid(weekHasLeader ? claimThisWeek : urlFloor);
                 urlInputRef.current?.focus();
               }}
-              className="text-[26px] md:text-[32px] lg:text-[42px] font-semibold tracking-tight text-foreground leading-snug hover:opacity-80 transition-opacity"
+              className="text-[26px] md:text-[32px] lg:whitespace-nowrap lg:text-[40px] font-semibold tracking-tight text-foreground leading-snug hover:opacity-80 transition-opacity"
             >
-              {showHofTarget ? (
+              {weekHasLeader ? (
                 <>
-                  Claim <span className="text-accent">Hall of Fame</span> for{" "}
-                  <span className="text-accent tabular-nums">${amountToTakeHof}</span>
+                  Claim <span className="text-accent">#1</span> this week for{" "}
+                  <span className="text-accent tabular-nums">${claimThisWeek}</span>
                 </>
               ) : (
                 <>
-                  Claim Rank <span className="text-accent">#1</span> for{" "}
-                  <span className="text-accent tabular-nums">${amountForRank1}</span>
+                  Get listed for <span className="text-accent tabular-nums">${urlFloor}</span>
                 </>
               )}
             </button>
             <p className="text-sm md:text-base lg:text-lg text-secondary mt-2">
-              {rankForTwoRecent === 1 ? (
+              {weekHasLeader ? (
                 <>
-                  Or take{" "}
-                  <button
-                    type="button"
-                    onClick={showRecentBoard}
-                    className="font-semibold text-foreground hover:text-accent transition-colors"
-                  >
-                    Last 48 hrs #1
-                  </button>{" "}
-                  for{" "}
+                  Or get listed for{" "}
                   <button
                     type="button"
                     onClick={() => {
@@ -427,27 +295,22 @@ export default function Hero() {
                 </>
               ) : (
                 <>
-                  Or hop for{" "}
+                  Or claim #1 this week for{" "}
                   <button
                     type="button"
                     onClick={() => {
-                      applyBid(urlFloor);
+                      applyBid(claimThisWeek);
                       urlInputRef.current?.focus();
                     }}
                     className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
                   >
-                    ${urlFloor}
-                  </button>
-                  {" — "}
-                  <button
-                    type="button"
-                    onClick={showRecentBoard}
-                    className="font-semibold text-foreground hover:text-accent transition-colors tabular-nums"
-                  >
-                    #{rankForTwoRecent} on Last 48 hrs
+                    ${claimThisWeek}
                   </button>
                 </>
               )}
+            </p>
+            <p className="text-[12px] md:text-[13px] text-secondary/80 mt-2 max-w-[360px]">
+              The page stays. This rank lasts 7 days. All time keeps the total.
             </p>
           </motion.div>
         </div>
@@ -610,82 +473,25 @@ export default function Hero() {
           </div>
 
           <p className="mt-2 text-sm text-secondary text-center md:text-left">
-            {showHofTarget && wouldTakeHof ? (
-              <span className="font-semibold text-foreground">
-                Takes <span className="text-accent">Hall of Fame</span>
-              </span>
-            ) : showHofTarget ? (
+            {claimingHof ? (
               <>
-                {isBoardRank1 && (
-                  <>
-                    <span className="font-semibold text-foreground">You&apos;re #1</span>
-                    {" · "}
-                  </>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    applyBid(amountToTakeHof, { lockMin: amountToTakeHof, hof: true });
-                    urlInputRef.current?.focus();
-                  }}
-                  className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
-                >
-                  {matchedListing
-                    ? `$${amountToTakeHof} more to claim Hall of Fame`
-                    : `$${amountToTakeHof} to claim Hall of Fame`}
-                </button>
-              </>
-            ) : url.trim() && expectedRank > 1 ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    applyBid(amountForRank1);
-                    urlInputRef.current?.focus();
-                  }}
-                  className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
-                >
-                  {matchedListing
-                    ? `$${amountForRank1} more to take rank #1`
-                    : `Take rank #1 for $${amountForRank1}`}
-                </button>
-                <span className="text-secondary/70">
-                  {" · "}all time #{expectedRank}
+                <span className="font-semibold text-foreground">
+                  This payment takes <span className="text-accent">Hall of Fame</span>
                 </span>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={showRecentBoard}
-                  className="font-semibold text-foreground hover:text-accent transition-colors tabular-nums"
-                >
-                  #{expectedRecentRank} on Last 48 hrs
-                </button>
-                <span className="text-secondary/70">
-                  {" · "}all time #{expectedRank}
-                </span>
-              </>
-            )}
-            {urlFloor === LOL_MIN_BID && (
-              <span className="text-secondary/70">{" · "}$1 min for .lol</span>
-            )}
-            {!showHofTarget &&
-              expectedRecentRank > 1 &&
-              amountForRecentRank1 < amountForRank1 && (
-              <>
                 {" · "}
                 <button
                   type="button"
-                    onClick={() => {
-                      applyBid(amountForRecentRank1);
-                      urlInputRef.current?.focus();
-                    }}
-                  className="text-accent hover:underline underline-offset-2"
+                  onClick={() => applyBid(weekHasLeader ? claimThisWeek : urlFloor)}
+                  className="font-semibold text-accent hover:underline underline-offset-2"
                 >
-                  take 48hr #1 for ${amountForRecentRank1}
+                  Back to this week
                 </button>
               </>
+            ) : (
+              <span>This payment is this week&apos;s rank. All time adds it to your total.</span>
+            )}
+            {urlFloor === LOL_MIN_BID && (
+              <span className="text-secondary/70">{" · "}$1 min for .lol</span>
             )}
           </p>
         </motion.form>

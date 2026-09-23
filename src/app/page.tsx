@@ -5,5 +5,5 @@ export const revalidate = 300;
 
 export default async function Home() {
   const products = await getRankedProducts();
-  return <HomeView page={1} products={products} />;
+  return <HomeView page={1} boardMode="week" products={products} />;
 }

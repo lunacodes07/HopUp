@@ -12,7 +12,7 @@ import { DEFAULT_CATEGORY, PRODUCT_CATEGORIES } from "@/lib/categories";
 import { SPONSOR_PLANS, SPONSOR_SLOT_COUNT, type SponsorPlan } from "@/lib/sponsored";
 import type { SponsoredSlot } from "@/types";
 
-const SPOTS = [1, 2] as const;
+const SPOTS = Array.from({ length: SPONSOR_SLOT_COUNT }, (_, i) => i + 1);
 
 const getTimeLeft = (expiresAt: string) => {
   const ms = new Date(expiresAt).getTime() - Date.now();
@@ -459,7 +459,7 @@ export default function SponsoredSlots({ variant = "default" }: { variant?: "def
         </p>
       </div>
 
-      <div className={sidebar ? "grid grid-cols-1 gap-3.5" : "grid grid-cols-2 gap-2.5"}>
+      <div className={sidebar ? "grid grid-cols-1 gap-3.5" : "grid grid-cols-3 gap-2.5"}>
         {SPOTS.map(renderCard)}
       </div>
 

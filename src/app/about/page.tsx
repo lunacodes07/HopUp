@@ -74,8 +74,8 @@ export default function AboutPage() {
               <span className="text-accent">unnecessary competition.</span>
             </h1>
             <p className="mt-6 text-lg md:text-2xl text-secondary max-w-3xl mx-auto leading-relaxed text-balance">
-              HopUp is a purely pay-to-win leaderboard. List your product, set a bid, and claim your spot.
-              Anyone can pay more to take your rank. It&apos;s cutthroat, chaotic, and completely live.
+              List your product and the page stays. This week resets after 7 days, and all time is the lifetime total.
+              Anyone can pay more to take this week. Hall of Fame stays until someone pays $10 more.
             </p>
           </motion.div>
 

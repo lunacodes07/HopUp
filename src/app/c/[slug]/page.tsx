@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!creator) return { title: "HopUp" };
   return {
     title: "HopUp — Your Product Deserves More Eyes",
-    description: "A backlink on every listing. Pay once. Rank higher.",
+    description: "A permanent page for your product. This week's #1 lasts 7 days.",
     robots: { index: false, follow: true },
   };
 }
