@@ -61,6 +61,25 @@ export function allTimeList<T extends WeekListing>(products: T[]): T[] {
     .sort((a, b) => b.price - a.price || createdAt(a) - createdAt(b));
 }
 
+/** Numbered all-time spot after this payment. Hall of Fame stays off this list. A new brand loses ties. */
+export function expectedAllTimeRank<T extends WeekListing>(
+  products: T[],
+  listing: T | null,
+  payment: number,
+) {
+  const lifetime = Math.max(0, (listing?.price || 0) + payment);
+  const created = listing ? createdAt(listing) : Number.POSITIVE_INFINITY;
+  const hofId = findHof(products)?.id;
+  let ahead = 0;
+  for (const product of products) {
+    if (product.id === hofId) continue;
+    if (listing && product.id === listing.id) continue;
+    const at = createdAt(product);
+    if (product.price > lifetime || (product.price === lifetime && at < created)) ahead += 1;
+  }
+  return ahead + 1;
+}
+
 export function boardList<T extends WeekListing>(
   products: T[],
   mode: "week" | "alltime",
@@ -73,6 +92,31 @@ export function boardList<T extends WeekListing>(
 export function claimWeekPrice(topBid: number, floor: number) {
   if (topBid <= 0) return floor;
   return Math.max(floor, topBid + 1);
+}
+
+/** A payment inside the current 7 days stacks. After the week ends, the next payment starts over. */
+export function addedWeekBid(item: WeekListing, payment: number, now = Date.now()) {
+  const current = weekBid(item, now);
+  return current > 0 ? current + payment : payment;
+}
+
+/**
+ * What this brand still has to pay to be #1.
+ * Money already on this week counts, so typing their link lowers the quote.
+ */
+export function claimPriceForListing<T extends WeekListing>(
+  products: T[],
+  listing: T | null,
+  floor: number,
+  now = Date.now(),
+) {
+  const mine = listing ? weekBid(listing, now) : 0;
+  if (!listing || mine <= 0) return claimWeekPrice(topWeekBid(products, now), floor);
+  const rivalTop = topWeekBid(
+    products.filter((product) => product.id !== listing.id),
+    now,
+  );
+  return Math.max(floor, claimWeekPrice(rivalTop, floor) - mine);
 }
 
 export function topWeekBid<T extends WeekListing>(products: T[], now = Date.now(), category?: string) {

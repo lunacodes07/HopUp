@@ -9,7 +9,8 @@ import type { Product } from "@/types";
 import { DEFAULT_MIN_BID, LOL_MIN_BID, minBidForUrl } from "@/lib/bid";
 import { DEFAULT_CATEGORY, isProductCategory, PRODUCT_CATEGORIES } from "@/lib/categories";
 import { hallOfFameClaimPrice } from "@/lib/hof";
-import { claimWeekPrice, findHof, topWeekBid } from "@/lib/week";
+import { listingKey } from "@/lib/format-url";
+import { claimPriceForListing, expectedAllTimeRank, findHof, topWeekBid, weekBid } from "@/lib/week";
 import { rememberPendingShare } from "@/lib/share";
 import LiveStats from "./LiveStats";
 import Ticker from "./Ticker";
@@ -202,8 +203,19 @@ export default function Hero() {
 
   const pinned = useMemo(() => findHof(leaderboardData), [leaderboardData]);
   const weekTop = useMemo(() => topWeekBid(leaderboardData), [leaderboardData]);
-  const claimThisWeek = claimWeekPrice(weekTop, urlFloor);
+  const matchedListing = useMemo(() => {
+    const key = listingKey(url);
+    if (!key) return null;
+    return leaderboardData.find((product) => listingKey(product.url) === key) ?? null;
+  }, [leaderboardData, url]);
+  const matchedWeek = matchedListing ? weekBid(matchedListing) : 0;
+  const claimThisWeek = claimPriceForListing(leaderboardData, matchedListing, urlFloor);
   const weekHasLeader = weekTop > 0;
+  const staysOnPlaque = Boolean(pinned && matchedListing && matchedListing.id === pinned.id);
+  const allTimeRank = useMemo(
+    () => expectedAllTimeRank(leaderboardData, matchedListing, bidAmount),
+    [leaderboardData, matchedListing, bidAmount],
+  );
   const hofPrice = pinned ? hallOfFameClaimPrice(pinned.price) : 0;
 
   useEffect(() => {
@@ -329,17 +341,27 @@ export default function Hero() {
             </div>
           )}
 
-          <div className="flex flex-col items-center md:flex-row md:items-end gap-4 md:gap-3">
-            <input
-              ref={urlInputRef}
-              id="url"
-              type="text"
-              placeholder="yoursite.com or @handle"
-              required
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="w-full md:flex-1 md:min-w-[180px] bg-transparent border-b border-foreground/15 focus:border-accent outline-none py-2.5 text-base font-medium text-center md:text-left placeholder:text-secondary/60 transition-colors"
-            />
+          <div className="flex flex-col items-center md:flex-row md:items-start gap-4 md:gap-3">
+            <div className="w-full md:flex-1 md:min-w-[180px]">
+              <input
+                ref={urlInputRef}
+                id="url"
+                type="text"
+                placeholder="yoursite.com or @handle"
+                required
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="w-full bg-transparent border-b border-foreground/15 focus:border-accent outline-none py-2.5 text-base font-medium text-center md:text-left placeholder:text-secondary/60 transition-colors"
+              />
+              <p className="mt-2 text-center md:text-left text-sm md:text-base font-bold tracking-tight text-foreground">
+                Expected All time Rank: {" "}
+                {claimingHof || staysOnPlaque ? (
+                  <span className="text-accent">Hall of Fame</span>
+                ) : (
+                  <span className="text-accent tabular-nums">#{allTimeRank}</span>
+                )}
+              </p>
+            </div>
 
             <div className="relative shrink-0">
               <select
@@ -488,7 +510,11 @@ export default function Hero() {
                 </button>
               </>
             ) : (
-              <span>This payment is this week&apos;s rank. All time adds it to your total.</span>
+              <span>
+                {matchedWeek > 0
+                  ? `This adds to the $${matchedWeek} already on this week. All time adds it to your total.`
+                  : "This payment is this week's rank. All time adds it to your total."}
+              </span>
             )}
             {urlFloor === LOL_MIN_BID && (
               <span className="text-secondary/70">{" · "}$1 min for .lol</span>

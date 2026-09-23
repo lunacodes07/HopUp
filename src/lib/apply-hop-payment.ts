@@ -2,7 +2,7 @@ import { supabaseServer } from "@/lib/supabase-server";
 import { fetchMetadata } from "@/lib/metadata";
 import { applyPendingProductLogo, isPendingProductLogo, storeResolvedProductLogo } from "@/lib/product-logo-server";
 import { hallOfFameClaimPrice } from "@/lib/hof";
-import type { WeekListing } from "@/lib/week";
+import { addedWeekBid, type WeekListing } from "@/lib/week";
 
 function missingWeekColumn(error: { message?: string } | null) {
   const message = error?.message || "";
@@ -50,7 +50,7 @@ export async function applyHopPayment(paymentData: {
 
     if (!hofClaim) {
       updatePayload.last_hopped_at = hoppedAt;
-      updatePayload.week_bid = bidAmount;
+      updatePayload.week_bid = addedWeekBid(existingProduct as WeekListing, bidAmount);
     }
 
     if (fetchedDescription && fetchedDescription.trim() !== "") {

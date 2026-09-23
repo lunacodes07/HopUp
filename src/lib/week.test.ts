@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   allTimeList,
+  addedWeekBid,
+  claimPriceForListing,
+  expectedAllTimeRank,
   claimWeekPrice,
   findHof,
   thisWeekList,
@@ -73,6 +76,36 @@ test("hall of fame stays pinned and does not set this week's price", () => {
   assert.equal(topWeekBid(products, now), 11);
   assert.equal(topWeekBid(products, now, "SEO"), 2);
   assert.equal(claimWeekPrice(topWeekBid(products, now, "Design"), 2), 12);
+});
+
+test("typing a brand already on this week lowers the #1 price by what they already paid", () => {
+  const products = [
+    { id: "plaque", price: 80, week_bid: 0, is_hof: true, last_hopped_at: stale, created_at: stale },
+    { id: "leader", price: 20, week_bid: 20, last_hopped_at: recent, created_at: recent, url: "https://leader.com" },
+    { id: "behind", price: 30, week_bid: 11, last_hopped_at: recent, created_at: stale, url: "https://behind.com" },
+    { id: "expired", price: 40, week_bid: 9, last_hopped_at: stale, created_at: stale, url: "https://expired.com" },
+  ];
+
+  assert.equal(claimPriceForListing(products, null, 2, now), 21);
+  assert.equal(claimPriceForListing(products, products[2], 2, now), 10);
+  assert.equal(claimPriceForListing(products, products[1], 2, now), 2);
+  assert.equal(claimPriceForListing(products, products[3], 2, now), 21);
+  assert.equal(addedWeekBid(products[2], 10, now), 21);
+  assert.equal(addedWeekBid(products[3], 10, now), 10);
+});
+
+test("all-time rank follows the bid and keeps an earlier tie ahead", () => {
+  const products = [
+    { id: "plaque", price: 80, is_hof: true, created_at: stale },
+    { id: "high", price: 55, created_at: stale },
+    { id: "mid", price: 20, created_at: recent },
+  ];
+
+  assert.equal(expectedAllTimeRank(products, null, 20), 3);
+  assert.equal(expectedAllTimeRank(products, null, 21), 2);
+  assert.equal(expectedAllTimeRank(products, null, 56), 1);
+  assert.equal(expectedAllTimeRank(products, products[2], 35), 2);
+  assert.equal(expectedAllTimeRank(products, products[2], 36), 1);
 });
 
 test("before the pin exists, the highest lifetime price is hall of fame", () => {
