@@ -247,10 +247,11 @@ export default function Hero() {
     <button
       type="button"
       onClick={() => logoInputRef.current?.click()}
-      className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-secondary hover:text-foreground transition-colors"
+      className="inline-flex items-center gap-1 text-[12px] font-semibold text-secondary hover:text-foreground transition-colors"
     >
       <Upload className="w-3.5 h-3.5" />
       Upload logo
+      <span className="text-[9px] font-medium leading-none tracking-tight text-secondary/70">*Optional</span>
     </button>
   );
 
