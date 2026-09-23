@@ -5,28 +5,30 @@ import { supabase } from "@/lib/supabase";
 
 export { findProductBySlug, withBoardRanks };
 
+const PRODUCT_COLUMNS = [
+  "id, name, description, category, clicks, upvotes, price, week_bid, is_hof, url, logo_url, created_at, last_hopped_at",
+  "id, name, description, category, clicks, upvotes, price, url, logo_url, created_at, last_hopped_at",
+  "id, name, description, category, clicks, price, url, logo_url, created_at, last_hopped_at",
+  "id, name, description, category, clicks, price, url, created_at, last_hopped_at",
+];
+
 async function loadRankedProducts(): Promise<Product[]> {
-  const withUpvotes = await supabase
-    .from("products")
-    .select("id, name, description, category, clicks, upvotes, price, url, logo_url, created_at, last_hopped_at")
-    .order("price", { ascending: false })
-    .order("created_at", { ascending: true });
+  let data: Product[] | null = null;
+  let error: { message: string } | null = null;
 
-  const withLogo = withUpvotes.error
-    ? await supabase
-        .from("products")
-        .select("id, name, description, category, clicks, price, url, logo_url, created_at, last_hopped_at")
-        .order("price", { ascending: false })
-        .order("created_at", { ascending: true })
-    : withUpvotes;
-
-  const { data, error } = withLogo.error
-    ? await supabase
-        .from("products")
-        .select("id, name, description, category, clicks, price, url, created_at, last_hopped_at")
-        .order("price", { ascending: false })
-        .order("created_at", { ascending: true })
-    : withLogo;
+  for (const columns of PRODUCT_COLUMNS) {
+    const result = await supabase
+      .from("products")
+      .select(columns)
+      .order("price", { ascending: false })
+      .order("created_at", { ascending: true });
+    if (!result.error) {
+      data = result.data as unknown as Product[];
+      error = null;
+      break;
+    }
+    error = result.error;
+  }
 
   if (error) throw error;
 

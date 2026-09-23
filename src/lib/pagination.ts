@@ -1,27 +1,23 @@
 export const LISTINGS_PER_PAGE = 10;
 
-export type BoardMode = "alltime" | "recent";
+export type BoardMode = "week" | "alltime";
 
 export function boardPath(mode: BoardMode, page = 1) {
-  if (mode === "recent") {
-    return page <= 1 ? "/last-48-hours#leaderboard" : `/last-48-hours/${page}#leaderboard`;
+  if (mode === "week") {
+    return page <= 1 ? "/#leaderboard" : `/this-week/${page}#leaderboard`;
   }
-  return page <= 1 ? "/#leaderboard" : `/all-time/${page}#leaderboard`;
+  return page <= 1 ? "/all-time#leaderboard" : `/all-time/${page}#leaderboard`;
 }
 
 export function boardCanonicalPath(mode: BoardMode, page = 1) {
-  if (mode === "recent") {
-    return page <= 1 ? "/last-48-hours" : `/last-48-hours/${page}`;
+  if (mode === "week") {
+    return page <= 1 ? "/" : `/this-week/${page}`;
   }
-  return page <= 1 ? "/" : `/all-time/${page}`;
+  return page <= 1 ? "/all-time" : `/all-time/${page}`;
 }
 
 export function totalPagesFor(count: number, perPage = LISTINGS_PER_PAGE) {
   return Math.max(1, Math.ceil(count / perPage));
-}
-
-export function boardSize(productCount: number) {
-  return productCount >= 2 ? productCount - 1 : productCount;
 }
 
 export function parsePageParam(raw: string | undefined): number | null {

@@ -58,7 +58,7 @@ export default function WhyFounders() {
         </p>
 
         <p className="text-base md:text-lg text-secondary max-w-[520px] leading-relaxed mb-8">
-          Every listing is a public page with your link on it. A few dollars puts you on a live board people actually scroll.
+          $2 keeps the page. A few dollars more takes this week.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-2 text-[15px] text-secondary">

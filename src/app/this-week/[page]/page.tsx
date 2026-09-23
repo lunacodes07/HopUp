@@ -16,18 +16,18 @@ type PageProps = {
 
 export async function generateStaticParams() {
   try {
-    return boardPageParams("recent", await loadBoardProducts());
+    return boardPageParams("week", await loadBoardProducts());
   } catch {
     return [];
   }
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { page } = await resolveBoardPage("recent", (await params).page);
-  return boardMetadata("recent", page);
+  const { page } = await resolveBoardPage("week", (await params).page);
+  return boardMetadata("week", page);
 }
 
-export default async function Last48HoursPaged({ params }: PageProps) {
-  const { page, products } = await resolveBoardPage("recent", (await params).page);
-  return <HomeView page={page} boardMode="recent" products={products} />;
+export default async function ThisWeekPage({ params }: PageProps) {
+  const { page, products } = await resolveBoardPage("week", (await params).page);
+  return <HomeView page={page} boardMode="week" products={products} />;
 }

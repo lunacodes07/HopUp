@@ -12,7 +12,7 @@ import { DEFAULT_CATEGORY, PRODUCT_CATEGORIES } from "@/lib/categories";
 import { SPONSOR_PLANS, SPONSOR_SLOT_COUNT, type SponsorPlan } from "@/lib/sponsored";
 import type { SponsoredSlot } from "@/types";
 
-const SPOTS = [1, 2] as const;
+const SPOTS = Array.from({ length: SPONSOR_SLOT_COUNT }, (_, i) => i + 1);
 
 const getTimeLeft = (expiresAt: string) => {
   const ms = new Date(expiresAt).getTime() - Date.now();
@@ -429,14 +429,14 @@ export default function SponsoredSlots({ variant = "default" }: { variant?: "def
 
   const sidebar = variant === "sidebar";
 
-  const renderCard = (n: number) => {
+  const renderCard = (n: number, key: string, wide: boolean, hidden = false) => {
     const listing = bySlot.get(n);
     return (
-      <div key={n} className="w-full min-w-0">
+      <div key={key} aria-hidden={hidden || undefined} className={wide ? "w-[72vw] max-w-[300px] shrink-0" : "w-full min-w-0"}>
         {listing ? (
-          <FilledCard slot={listing} large={sidebar} />
+          <FilledCard slot={listing} large={!wide && sidebar} />
         ) : (
-          <EmptyCard n={n} onClaim={setClaimSlot} large={sidebar} />
+          <EmptyCard n={n} onClaim={setClaimSlot} large={!wide && sidebar} />
         )}
       </div>
     );
@@ -459,9 +459,31 @@ export default function SponsoredSlots({ variant = "default" }: { variant?: "def
         </p>
       </div>
 
-      <div className={sidebar ? "grid grid-cols-1 gap-3.5" : "grid grid-cols-2 gap-2.5"}>
-        {SPOTS.map(renderCard)}
-      </div>
+      {sidebar ? (
+        <div className="grid grid-cols-1 gap-3.5">
+          {SPOTS.map((n) => renderCard(n, String(n), false))}
+        </div>
+      ) : (
+        <>
+          <div
+            className={`sponsor-marquee group/sponsor -mx-4 overflow-hidden md:hidden ${
+              claimSlot !== null ? "pointer-events-none" : ""
+            }`}
+          >
+            <div
+              className={`sponsor-track flex w-max items-stretch gap-3 pr-3 motion-safe:animate-sponsor-marquee group-hover/sponsor:[animation-play-state:paused] ${
+                claimSlot !== null ? "[animation-play-state:paused]" : ""
+              }`}
+            >
+              {SPOTS.map((n) => renderCard(n, `loop-${n}`, true))}
+              {SPOTS.map((n) => renderCard(n, `loop-${n}-copy`, true, true))}
+            </div>
+          </div>
+          <div className="hidden md:grid md:grid-cols-3 md:gap-2.5">
+            {SPOTS.map((n) => renderCard(n, `grid-${n}`, false))}
+          </div>
+        </>
+      )}
 
       <AnimatePresence>
         {claimSlot !== null && (

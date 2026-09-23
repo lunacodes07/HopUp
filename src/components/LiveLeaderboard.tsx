@@ -8,28 +8,23 @@ import { Search, ArrowRight, Crown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 import { getProductLogoUrl, handleLogoError } from "@/lib/logo";
-import { minBidForUrl } from "@/lib/bid";
+import { DEFAULT_MIN_BID, minBidForUrl } from "@/lib/bid";
 import { hallOfFameClaimPrice } from "@/lib/hof";
 import { BOARD_FILTERS } from "@/lib/categories";
 import { LISTINGS_PER_PAGE, type BoardMode, boardCanonicalPath, boardPath } from "@/lib/pagination";
 import { productPath } from "@/lib/product-path";
 import { trackProductClick } from "@/lib/track-click";
 import { readVotedFromStorage, writeVotedToStorage } from "@/lib/upvotes";
+import { allTimeList, claimWeekPrice, findHof, hoppedAt, thisWeekList, topWeekBid, weekBid } from "@/lib/week";
 import Pagination from "./Pagination";
 import SponsoredSlots from "./SponsoredSlots";
-import LatestActivity from "./LatestActivity";
 import TopUpvoted from "./TopUpvoted";
 import UpvoteButton from "./UpvoteButton";
 
-const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
-
 const BOARD_MODES: { id: BoardMode; label: string; shortLabel?: string }[] = [
+  { id: "week", label: "This week", shortLabel: "Week" },
   { id: "alltime", label: "All time" },
-  { id: "recent", label: "Last 48 hrs", shortLabel: "48 hrs" },
 ];
-
-const hoppedAt = (item: Product) =>
-  new Date(item.last_hopped_at || item.created_at || 0).getTime();
 
 const getTimeAgo = (dateString?: string) => {
   if (!dateString) return "";
@@ -50,7 +45,7 @@ const getTimeAgo = (dateString?: string) => {
 
 export default function LiveLeaderboard({
   page = 1,
-  boardMode = "alltime",
+  boardMode = "week",
   initialProducts = [],
   initialVoted = [],
 }: {
@@ -118,36 +113,29 @@ export default function LiveLeaderboard({
     };
   }, []);
 
-  const champion = useMemo(() => {
-    if (leaderboardData.length < 2) return null;
-    return leaderboardData[0];
-  }, [leaderboardData]);
+  const champion = useMemo(() => findHof(leaderboardData), [leaderboardData]);
 
-  const activeBoard = useMemo(() => {
-    if (!champion) return leaderboardData;
-    return leaderboardData
-      .filter((p) => p.id !== champion.id)
-      .map((item, idx) => ({ ...item, rank: idx + 1 }));
-  }, [leaderboardData, champion]);
+  const sourceBoard = useMemo(() => {
+    const list = boardMode === "week" ? thisWeekList(leaderboardData, now) : allTimeList(leaderboardData);
+    return list.map((item, idx) => ({ ...item, rank: idx + 1 }));
+  }, [leaderboardData, boardMode, now]);
 
-  const recentBoard = useMemo(() => {
-    const cutoff = now - FORTY_EIGHT_HOURS_MS;
-    return activeBoard
-      .filter((item) => hoppedAt(item) >= cutoff)
-      .map((item, idx) => ({ ...item, rank: idx + 1 }));
-  }, [activeBoard, now]);
+  const categoryClaim = useMemo(() => {
+    if (activeCategory === "All") return null;
+    return claimWeekPrice(topWeekBid(leaderboardData, now, activeCategory), DEFAULT_MIN_BID);
+  }, [activeCategory, leaderboardData, now]);
 
-  const sourceBoard = boardMode === "recent" ? recentBoard : activeBoard;
-
-  const filteredData = sourceBoard.filter((item) => {
-    const matchesCategory =
-      activeCategory === "All" || (item.category || "").toLowerCase().includes(activeCategory.toLowerCase());
-    const query = searchQuery.toLowerCase();
-    const matchesSearch =
-      (item.name || "").toLowerCase().includes(query) ||
-      (item.description || "").toLowerCase().includes(query);
-    return matchesCategory && matchesSearch;
-  });
+  const filteredData = sourceBoard
+    .filter((item) => {
+      const matchesCategory =
+        activeCategory === "All" || (item.category || "").toLowerCase().includes(activeCategory.toLowerCase());
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        (item.name || "").toLowerCase().includes(query) ||
+        (item.description || "").toLowerCase().includes(query);
+      return matchesCategory && matchesSearch;
+    })
+    .map((item, idx) => ({ ...item, rank: idx + 1 }));
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
   const paginatedData = filteredData.slice(
@@ -166,20 +154,11 @@ export default function LiveLeaderboard({
     document.getElementById("leaderboard")?.scrollIntoView({ block: "start" });
   }, [page]);
 
-  const latestActivity = useMemo(() => {
-    return [...sourceBoard]
-      .sort((a, b) => hoppedAt(b) - hoppedAt(a))
-      .slice(0, 5);
-  }, [sourceBoard]);
-
-  const latestActivityMobile = latestActivity.slice(0, 3);
-
   const topUpvoted = useMemo(() => {
-    const pool = champion ? [champion, ...activeBoard] : leaderboardData;
-    return [...pool]
+    return [...leaderboardData]
       .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0) || hoppedAt(b) - hoppedAt(a))
       .slice(0, 5);
-  }, [leaderboardData, champion, activeBoard]);
+  }, [leaderboardData]);
 
   const topUpvotedMobile = topUpvoted.slice(0, 3);
 
@@ -187,8 +166,6 @@ export default function LiveLeaderboard({
     currentPage === 1 &&
     activeCategory === "All" &&
     !searchQuery.trim();
-
-  const showLatestActivity = showMobileExtras && latestActivity.length > 0;
 
   const trackClick = (item: Product) => {
     setLeaderboardData((prev) =>
@@ -356,9 +333,9 @@ export default function LiveLeaderboard({
               Who&apos;s up
             </h2>
             <p className="hidden sm:block mt-1 text-[10px] md:text-[11px] leading-tight text-secondary/80">
-              {boardMode === "recent"
-                ? "Separate ranks for anyone who hopped in the last 48 hours."
-                : "The internet's most unnecessary competition."}
+              {boardMode === "week"
+                ? "Ranked by what you paid this week. $2 gets you on here for 7 days."
+                : "Ranked by total paid. The page stays."}
             </p>
           </div>
 
@@ -454,6 +431,25 @@ export default function LiveLeaderboard({
             />
           </label>
         </div>
+
+        {categoryClaim !== null && (
+          <p className="mb-3 text-[12px] text-secondary">
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(
+                  new CustomEvent("prefill-hop", {
+                    detail: { price: categoryClaim, category: activeCategory },
+                  })
+                );
+                document.getElementById("submit")?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+              className="font-semibold text-accent hover:underline underline-offset-2"
+            >
+              Claim #1 in {activeCategory} this week for ${categoryClaim}
+            </button>
+          </p>
+        )}
 
         <label className="relative sm:hidden mb-3 flex items-center border-b border-foreground/15 focus-within:border-accent transition-colors">
           <Search className="absolute left-3.5 w-3.5 h-3.5 text-secondary/70 pointer-events-none" />
@@ -558,7 +554,7 @@ export default function LiveLeaderboard({
                       <div className="shrink-0 flex items-center gap-1">
                         <div className="flex flex-col items-end gap-1">
                           <span className="font-semibold tabular-nums text-[15px] md:text-base">
-                            ${item.price.toLocaleString()}
+                            ${(boardMode === "week" ? weekBid(item, now) : item.price).toLocaleString()}
                           </span>
                           <button
                             onClick={(e) => hopThis(item, e)}
@@ -586,9 +582,6 @@ export default function LiveLeaderboard({
                           onVoted={markVoted}
                           layout="strip"
                         />
-                        {showLatestActivity && (
-                          <LatestActivity items={latestActivityMobile} onOpen={trackClick} />
-                        )}
                       </div>
                     )}
                     </Fragment>
@@ -606,13 +599,13 @@ export default function LiveLeaderboard({
                     className="h-16 w-auto mb-3 animate-hoppy-bob select-none"
                   />
                   <p className="text-sm font-medium text-foreground mb-1">
-                    {boardMode === "recent" && !searchQuery && activeCategory === "All"
-                      ? "No hops in the last 48 hours"
+                    {boardMode === "week" && !searchQuery && activeCategory === "All"
+                      ? "No one has hopped this week"
                       : "No products found"}
                   </p>
                   <p className="text-[13px]">
-                    {boardMode === "recent" && !searchQuery && activeCategory === "All"
-                      ? "Hop now and you can take #1 on this board."
+                    {boardMode === "week" && !searchQuery && activeCategory === "All"
+                      ? "Get listed for $2 and you take #1."
                       : "The board is empty. Be the first to hop up."}
                   </p>
                 </div>
@@ -637,7 +630,6 @@ export default function LiveLeaderboard({
             onOpen={trackClick}
             onVoted={markVoted}
           />
-          <LatestActivity items={latestActivity} layout="stack" onOpen={trackClick} />
         </aside>
         </div>
       </div>

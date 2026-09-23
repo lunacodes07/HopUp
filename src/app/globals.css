@@ -294,9 +294,14 @@ body {
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .testimonial-track {
+    .testimonial-track,
+    .sponsor-track {
       animation: none !important;
       transform: none !important;
+    }
+
+    .sponsor-marquee {
+      overflow-x: auto;
     }
   }
 }

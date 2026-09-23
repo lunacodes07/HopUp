@@ -5,6 +5,8 @@ import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
 import { cookies } from 'next/headers';
 import { minBidForUrl } from '@/lib/bid';
+import { hallOfFameClaimPrice } from '@/lib/hof';
+import { findHof, type WeekListing } from '@/lib/week';
 import { DEFAULT_CATEGORY, isProductCategory } from '@/lib/categories';
 import { CREATOR_COOKIE } from '@/lib/creators';
 import { getCreatorBySlug } from '@/lib/creators-server';
@@ -43,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { url, bidAmount, category, nameFallback, kind, slotNumber, weeks, logoDataUrl } = body;
+    const { url, bidAmount, category, nameFallback, kind, slotNumber, weeks, logoDataUrl, hof } = body;
 
     const cookieStore = await cookies();
     const refSlug = cookieStore.get(CREATOR_COOKIE)?.value;
@@ -167,6 +169,17 @@ export async function POST(request: Request) {
         storedLogo = await storePendingProductLogo(logoDataUrl);
       }
 
+      if (hof === true) {
+        const holderPrice = await currentHallOfFamePrice();
+        if (holderPrice == null) {
+          return NextResponse.json({ error: 'Hall of Fame is not open yet' }, { status: 400 });
+        }
+        const required = hallOfFameClaimPrice(holderPrice);
+        if (amount < required) {
+          return NextResponse.json({ error: `Hall of Fame is $${required}` }, { status: 400 });
+        }
+      }
+
       amountInCents = amount * 100;
       metadata = {
         hopup_url: url,
@@ -174,6 +187,7 @@ export async function POST(request: Request) {
         hopup_category: category,
         hopup_name_fallback: nameFallback || url,
         hopup_product_id: existingProduct?.id || 'new',
+        ...(hof === true ? { hopup_hof: '1' } : {}),
         ...(storedLogo ? { hopup_logo: storedLogo } : {}),
         ...(creator ? { hopup_ref: creator.slug } : {}),
       };
@@ -213,4 +227,18 @@ export async function POST(request: Request) {
     console.error("Checkout creation failed:", error);
     return NextResponse.json({ error: error.message || "Failed to create checkout" }, { status: 500 });
   }
+}
+
+async function currentHallOfFamePrice(): Promise<number | null> {
+  const full = await supabaseServer
+    .from("products")
+    .select("id, price, is_hof, last_hopped_at, created_at");
+  const rows = full.error
+    ? (
+        await supabaseServer
+          .from("products")
+          .select("id, price, last_hopped_at, created_at")
+      ).data
+    : full.data;
+  return findHof((rows ?? []) as WeekListing[])?.price ?? null;
 }

@@ -4,9 +4,9 @@ Five tables. All of them are live. Nothing leftover to drop.
 
 | Table | What it is | Who writes |
 |---|---|---|
-| `products` | Hop leaderboard. Rank is **not** stored here — the app sorts by `price` desc. | Production webhook (`applyHopPayment`) |
+| `products` | Hop leaderboard. `price` is the lifetime total. `week_bid` is the latest payment. `is_hof` pins Hall of Fame. Rank is computed in JS. | Production webhook (`applyHopPayment`) |
 | `analytics` | One-row visit counter for the hero “total visits” number. | Browser RPC `increment_page_view` |
-| `sponsored_slots` | Two paid spots above the board. Separate from hops. | Production webhook (`applySponsoredPayment`) |
+| `sponsored_slots` | Three paid spots above the board. Separate from hops. | Production webhook (`applySponsoredPayment`) |
 | `creators` | Referral partners. Added by hand. | You, plus `increment_creator_clicks` |
 | `referral_sales` | One row per attributed hop/sponsored/Stanley checkout. | Production webhook (`recordReferralSale`) |
 | `stanley_slots` | Twelve spots on Brand My Stanley. One row per slot; hops replace the occupant and raise the bid. | Production webhook (`applyStanleyPayment`) |
@@ -22,6 +22,7 @@ RPCs (not tables): `increment_clicks`, `increment_upvotes`, `increment_page_view
 5. `stanley_slots_logo.sql` — optional uploaded logo on a Stanley spot + public `stanley-logos` bucket
 6. `products_logo.sql` — optional uploaded logo on a leaderboard listing + public `product-logos` bucket
 7. `product_upvotes.sql` — `products.upvotes` + `increment_upvotes` / `claim_upvote` RPCs + `product_votes` table
+8. `week_board.sql` — `products.week_bid` + `products.is_hof`, and pins the current highest bid as Hall of Fame
 
 Do not paste `schema.sql` into a database that already has these tables. It is the original create script, not a migration.
 

@@ -12,10 +12,10 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.hopup.lol"),
   title: "HopUp — Your Product Deserves More Eyes",
-  description: "A backlink on every listing. Pay once. Rank higher.",
+  description: "A permanent page for your product. This week's #1 lasts 7 days.",
   openGraph: {
     title: "HopUp — Your Product Deserves More Eyes",
-    description: "A backlink on every listing. Pay once. Rank higher.",
+    description: "A permanent page for your product. This week's #1 lasts 7 days.",
     type: "website",
     locale: "en_US",
     url: "https://www.hopup.lol",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "HopUp — Your Product Deserves More Eyes",
-    description: "A backlink on every listing. Pay once. Rank higher.",
+    description: "A permanent page for your product. This week's #1 lasts 7 days.",
     images: ["https://www.hopup.lol/og.jpg"],
   },
 };

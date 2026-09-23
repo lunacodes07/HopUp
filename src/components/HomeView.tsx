@@ -21,7 +21,7 @@ type HomeViewProps = {
 
 export default async function HomeView({
   page = 1,
-  boardMode = "alltime",
+  boardMode = "week",
   products = [],
 }: HomeViewProps) {
   const displayNames = await getXDisplayNames();

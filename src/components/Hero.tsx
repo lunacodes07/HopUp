@@ -1,26 +1,19 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, Minus, Plus, Loader2, ChevronDown, Upload, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/types";
 import { DEFAULT_MIN_BID, LOL_MIN_BID, minBidForUrl } from "@/lib/bid";
-import { DEFAULT_CATEGORY, PRODUCT_CATEGORIES } from "@/lib/categories";
+import { DEFAULT_CATEGORY, isProductCategory, PRODUCT_CATEGORIES } from "@/lib/categories";
 import { hallOfFameClaimPrice } from "@/lib/hof";
+import { listingKey } from "@/lib/format-url";
+import { claimPriceForListing, expectedAllTimeRank, findHof, topWeekBid, weekBid } from "@/lib/week";
 import { rememberPendingShare } from "@/lib/share";
 import LiveStats from "./LiveStats";
 import Ticker from "./Ticker";
-
-const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
-
-const hoppedAt = (item: Product) =>
-  new Date(item.last_hopped_at || item.created_at || 0).getTime();
-
-const matchesUrl = (productUrl: string | undefined, finalUrl: string) =>
-  productUrl?.replace(/\/$/, "").toLowerCase() === finalUrl.toLowerCase();
 
 const getFormattedUrlInfo = (rawUrl: string) => {
   let finalUrl = rawUrl.trim();
@@ -41,7 +34,6 @@ const getFormattedUrlInfo = (rawUrl: string) => {
 };
 
 export default function Hero() {
-  const router = useRouter();
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState<string>(DEFAULT_CATEGORY);
   const [bidAmount, setBidAmount] = useState(DEFAULT_MIN_BID);
@@ -66,14 +58,22 @@ export default function Hero() {
 
   const fetchData = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const columns = "id, url, category, price, week_bid, is_hof, last_hopped_at, created_at";
+      const full = await supabase
         .from("products")
-        .select("id, url, price, last_hopped_at, created_at")
+        .select(columns)
         .order("price", { ascending: false })
         .order("created_at", { ascending: true });
+      const result = full.error
+        ? await supabase
+            .from("products")
+            .select("id, url, category, price, last_hopped_at, created_at")
+            .order("price", { ascending: false })
+            .order("created_at", { ascending: true })
+        : full;
 
-      if (error) throw error;
-      if (data) setLeaderboardData(data as Product[]);
+      if (result.error) throw result.error;
+      if (result.data) setLeaderboardData(result.data as Product[]);
     } catch (err) {
       console.error("Failed to fetch products for rank preview:", err);
     }
@@ -103,6 +103,9 @@ export default function Hero() {
       if (!e.detail) return;
       const nextUrl = typeof e.detail.url === "string" ? e.detail.url : undefined;
       if (nextUrl) setUrl(nextUrl);
+      if (typeof e.detail.category === "string" && isProductCategory(e.detail.category)) {
+        setCategory(e.detail.category);
+      }
       if (typeof e.detail.price === "number") {
         applyBid(e.detail.price, {
           lockMin: e.detail.lockMin ? e.detail.price : 0,
@@ -162,6 +165,7 @@ export default function Hero() {
           category,
           nameFallback,
           ...(logoDataUrl ? { logoDataUrl } : {}),
+          ...(claimingHof ? { hof: true } : {}),
         }),
       });
 
@@ -197,140 +201,59 @@ export default function Hero() {
     }
   };
 
-  const champion = useMemo(() => {
-    if (leaderboardData.length < 2) return null;
-    return leaderboardData.reduce((top, p) => (p.price > top.price ? p : top));
-  }, [leaderboardData]);
-
-  const champId = champion?.id ?? null;
-
-  const activeBoard = useMemo(
-    () => (champId ? leaderboardData.filter((p) => p.id !== champId) : leaderboardData),
-    [leaderboardData, champId]
-  );
-
-  const recentBoard = useMemo(() => {
-    const cutoff = Date.now() - FORTY_EIGHT_HOURS_MS;
-    return activeBoard.filter((p) => hoppedAt(p) >= cutoff);
-  }, [activeBoard]);
-
-  const rankOnBoard = useCallback(
-    (board: Product[], bid: number) => {
-      let totalBid = bid;
-      let existingProductId: string | null = null;
-
-      if (url.trim()) {
-        const { finalUrl } = getFormattedUrlInfo(url);
-        const existingProduct = leaderboardData.find((p) => matchesUrl(p.url, finalUrl));
-        if (existingProduct) {
-          totalBid = existingProduct.price + bid;
-          existingProductId = existingProduct.id;
-        }
-      }
-
-      return (
-        board.filter((p) => {
-          if (existingProductId && p.id === existingProductId) return false;
-          return p.price >= totalBid;
-        }).length + 1
-      );
-    },
-    [leaderboardData, url]
-  );
-
-  const expectedRank = useMemo(
-    () => rankOnBoard(activeBoard, bidAmount),
-    [rankOnBoard, activeBoard, bidAmount]
-  );
-
-  const expectedRecentRank = useMemo(
-    () => rankOnBoard(recentBoard, bidAmount),
-    [rankOnBoard, recentBoard, bidAmount]
-  );
-
-  const rankForTwoRecent = useMemo(
-    () => rankOnBoard(recentBoard, urlFloor),
-    [rankOnBoard, recentBoard, urlFloor]
-  );
-
-  const amountForRank1 = useMemo(() => {
-    if (activeBoard.length === 0) return urlFloor;
-
-    const topPrice = Math.max(...activeBoard.map((p) => p.price));
-
-    let currentPrice = 0;
-    if (url.trim()) {
-      const { finalUrl } = getFormattedUrlInfo(url);
-      const existingProduct = activeBoard.find((p) => matchesUrl(p.url, finalUrl));
-      if (existingProduct) {
-        currentPrice = existingProduct.price;
-        const othersTop = activeBoard.filter((p) => p.id !== existingProduct.id && p.price >= topPrice);
-        if (othersTop.length === 0 && currentPrice === topPrice) {
-          return urlFloor;
-        }
-      }
-    }
-
-    const requiredTotal = topPrice + 1;
-    const requiredAdditionalBid = requiredTotal - currentPrice;
-
-    return Math.max(urlFloor, requiredAdditionalBid);
-  }, [activeBoard, url, urlFloor]);
-
-  const amountForRecentRank1 = useMemo(() => {
-    if (recentBoard.length === 0) return urlFloor;
-
-    const topPrice = Math.max(...recentBoard.map((p) => p.price));
-
-    let currentPrice = 0;
-    if (url.trim()) {
-      const { finalUrl } = getFormattedUrlInfo(url);
-      const existingProduct = activeBoard.find((p) => matchesUrl(p.url, finalUrl));
-      if (existingProduct) {
-        currentPrice = existingProduct.price;
-        const othersTop = recentBoard.filter((p) => p.id !== existingProduct.id && p.price >= topPrice);
-        if (othersTop.length === 0 && currentPrice === topPrice) {
-          return urlFloor;
-        }
-      }
-    }
-
-    return Math.max(urlFloor, topPrice + 1 - currentPrice);
-  }, [recentBoard, activeBoard, url, urlFloor]);
-
+  const pinned = useMemo(() => findHof(leaderboardData), [leaderboardData]);
+  const weekTop = useMemo(() => topWeekBid(leaderboardData), [leaderboardData]);
   const matchedListing = useMemo(() => {
-    if (!url.trim()) return null;
-    const { finalUrl } = getFormattedUrlInfo(url);
-    return leaderboardData.find((p) => matchesUrl(p.url, finalUrl)) ?? null;
-  }, [url, leaderboardData]);
+    const key = listingKey(url);
+    if (!key) return null;
+    return leaderboardData.find((product) => listingKey(product.url) === key) ?? null;
+  }, [leaderboardData, url]);
+  const matchedWeek = matchedListing ? weekBid(matchedListing) : 0;
+  const claimThisWeek = claimPriceForListing(leaderboardData, matchedListing, urlFloor);
+  const weekHasLeader = weekTop > 0;
+  const staysOnPlaque = Boolean(pinned && matchedListing && matchedListing.id === pinned.id);
+  const allTimeRank = useMemo(
+    () => expectedAllTimeRank(leaderboardData, matchedListing, bidAmount),
+    [leaderboardData, matchedListing, bidAmount],
+  );
+  const hofPrice = pinned ? hallOfFameClaimPrice(pinned.price) : 0;
 
-  const rank1 = activeBoard[0] ?? null;
-  const isBoardRank1 = Boolean(matchedListing && rank1 && matchedListing.id === rank1.id);
-
-  const amountToTakeHof = useMemo(() => {
-    if (!champion) return urlFloor;
-    return Math.max(urlFloor, hallOfFameClaimPrice(champion.price) - (matchedListing?.price ?? 0));
-  }, [champion, matchedListing, urlFloor]);
-
-  const showHofTarget = Boolean(champion && (claimingHof || isBoardRank1));
-
-  // After "claim HOF", hops on an existing listing only need the remaining bump.
   useEffect(() => {
-    if (!claimingHof || !champion) return;
-    setLockedMin(amountToTakeHof);
-    setBidAmount(amountToTakeHof);
-  }, [claimingHof, matchedListing?.id, amountToTakeHof, champion]);
+    if (!claimingHof || !pinned) return;
+    setLockedMin(hofPrice);
+    setBidAmount(hofPrice);
+  }, [claimingHof, pinned, hofPrice]);
 
-  const projectedTotal = useMemo(() => {
-    if (!matchedListing) return bidAmount;
-    return matchedListing.price + bidAmount;
-  }, [bidAmount, matchedListing]);
-
-  const wouldTakeHof = Boolean(champion && projectedTotal > champion.price);
-
-  const showRecentBoard = () => {
-    router.push("/last-48-hours#leaderboard");
-  };
+  const logoControl = logoDataUrl ? (
+    <span className="inline-flex items-center gap-2">
+      <img src={logoDataUrl} alt="" className="w-7 h-7 rounded-md border border-border/50 bg-white object-contain" />
+      <button
+        type="button"
+        onClick={() => logoInputRef.current?.click()}
+        className="text-[12px] font-semibold text-foreground hover:text-accent-dark"
+      >
+        Replace logo
+      </button>
+      <button
+        type="button"
+        onClick={() => setLogoDataUrl(null)}
+        aria-label="Remove uploaded logo"
+        className="text-secondary hover:text-foreground"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </span>
+  ) : (
+    <button
+      type="button"
+      onClick={() => logoInputRef.current?.click()}
+      className="inline-flex items-center gap-1 text-[12px] font-semibold text-secondary hover:text-foreground transition-colors"
+    >
+      <Upload className="w-3.5 h-3.5" />
+      Upload logo
+      <span className="text-[9px] font-medium leading-none tracking-tight text-secondary/70">*Optional</span>
+    </button>
+  );
 
   return (
     <section className="relative w-full px-4 md:px-8 lg:px-16 pt-20 md:pt-24 pb-3 md:pb-4">
@@ -369,7 +292,7 @@ export default function Hero() {
               Your product deserves <span className="text-accent">more eyes.</span>
             </h1>
             <p className="text-base md:text-lg lg:text-[22px] text-secondary">
-              A backlink on every listing. Pay once. Rank higher.
+              A permanent listing and a backlink. Pay once.
             </p>
           </motion.div>
 
@@ -377,43 +300,31 @@ export default function Hero() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col items-center lg:items-end text-center lg:text-right shrink-0 lg:max-w-[420px]"
+            className="flex flex-col items-center lg:items-end text-center lg:text-right shrink-0"
           >
             <button
               type="button"
               onClick={() => {
-                applyBid(
-                  showHofTarget ? amountToTakeHof : amountForRank1,
-                  showHofTarget ? { lockMin: amountToTakeHof, hof: true } : undefined
-                );
+                applyBid(weekHasLeader ? claimThisWeek : urlFloor);
                 urlInputRef.current?.focus();
               }}
-              className="text-[26px] md:text-[32px] lg:text-[42px] font-semibold tracking-tight text-foreground leading-snug hover:opacity-80 transition-opacity"
+              className="text-[26px] md:text-[32px] lg:whitespace-nowrap lg:text-[40px] font-semibold tracking-tight text-foreground leading-snug hover:opacity-80 transition-opacity"
             >
-              {showHofTarget ? (
+              {weekHasLeader ? (
                 <>
-                  Claim <span className="text-accent">Hall of Fame</span> for{" "}
-                  <span className="text-accent tabular-nums">${amountToTakeHof}</span>
+                  Claim <span className="text-accent">#1</span> this week for{" "}
+                  <span className="text-accent tabular-nums">${claimThisWeek}</span>
                 </>
               ) : (
                 <>
-                  Claim Rank <span className="text-accent">#1</span> for{" "}
-                  <span className="text-accent tabular-nums">${amountForRank1}</span>
+                  Get listed for <span className="text-accent tabular-nums">${urlFloor}</span>
                 </>
               )}
             </button>
             <p className="text-sm md:text-base lg:text-lg text-secondary mt-2">
-              {rankForTwoRecent === 1 ? (
+              {weekHasLeader ? (
                 <>
-                  Or take{" "}
-                  <button
-                    type="button"
-                    onClick={showRecentBoard}
-                    className="font-semibold text-foreground hover:text-accent transition-colors"
-                  >
-                    Last 48 hrs #1
-                  </button>{" "}
-                  for{" "}
+                  Or get listed for{" "}
                   <button
                     type="button"
                     onClick={() => {
@@ -427,27 +338,22 @@ export default function Hero() {
                 </>
               ) : (
                 <>
-                  Or hop for{" "}
+                  Or claim #1 this week for{" "}
                   <button
                     type="button"
                     onClick={() => {
-                      applyBid(urlFloor);
+                      applyBid(claimThisWeek);
                       urlInputRef.current?.focus();
                     }}
                     className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
                   >
-                    ${urlFloor}
-                  </button>
-                  {" — "}
-                  <button
-                    type="button"
-                    onClick={showRecentBoard}
-                    className="font-semibold text-foreground hover:text-accent transition-colors tabular-nums"
-                  >
-                    #{rankForTwoRecent} on Last 48 hrs
+                    ${claimThisWeek}
                   </button>
                 </>
               )}
+            </p>
+            <p className="text-[12px] md:text-[13px] text-secondary/80 mt-2 max-w-[360px]">
+              The page stays. This rank lasts 7 days. All time keeps the total.
             </p>
           </motion.div>
         </div>
@@ -466,226 +372,159 @@ export default function Hero() {
             </div>
           )}
 
-          <div className="flex flex-col items-center md:flex-row md:items-end gap-4 md:gap-3">
-            <input
-              ref={urlInputRef}
-              id="url"
-              type="text"
-              placeholder="yoursite.com or @handle"
-              required
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="w-full md:flex-1 md:min-w-[180px] bg-transparent border-b border-foreground/15 focus:border-accent outline-none py-2.5 text-base font-medium text-center md:text-left placeholder:text-secondary/60 transition-colors"
-            />
-
-            <div className="relative shrink-0">
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                aria-label="Category"
-                className="appearance-none bg-transparent border-b border-foreground/15 focus:border-accent outline-none py-2.5 pr-7 text-base font-medium cursor-pointer transition-colors"
-              >
-                {PRODUCT_CATEGORIES.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary pointer-events-none" />
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-3 max-md:rounded-[24px] max-md:border max-md:border-white/80 max-md:bg-white/60 max-md:p-4 max-md:backdrop-blur-xl max-md:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_14px_38px_-22px_rgba(45,41,38,0.38)]">
+            <div className="w-full md:flex-1 md:min-w-[180px]">
+              <input
+                ref={urlInputRef}
+                id="url"
+                type="text"
+                placeholder="yoursite.com or @handle"
+                required
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="w-full bg-transparent border-b border-foreground/15 focus:border-accent outline-none py-2.5 text-base font-medium text-left placeholder:text-secondary/60 transition-colors"
+              />
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 md:block">
+                <p className="text-sm md:text-base font-bold tracking-tight text-foreground">
+                  Expected All time Rank:{" "}
+                  {claimingHof || staysOnPlaque ? (
+                    <span className="text-accent">Hall of Fame</span>
+                  ) : (
+                    <span className="text-accent tabular-nums">#{allTimeRank}</span>
+                  )}
+                </p>
+                <div className="md:hidden">{logoControl}</div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-0.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => adjustBid(-1)}
-                disabled={bidAmount <= minBid}
-                aria-label="Decrease bid"
-                className="w-9 h-9 flex items-center justify-center text-secondary hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <div className="flex items-center min-w-[80px] justify-center border-b border-foreground/20 focus-within:border-accent transition-colors">
-                <span className="text-secondary text-base select-none">$</span>
-                <input
-                  type="number"
-                  min={minBid}
-                  step="1"
-                  value={bidAmount}
-                  onChange={handleBidInputChange}
-                  aria-label="Bid amount"
-                  className="w-16 bg-transparent text-center font-semibold text-lg outline-none appearance-none m-0 py-1.5 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
+            <div className="flex w-full items-center gap-3 md:contents">
+              <div className="relative min-w-0 flex-1 md:flex-none md:shrink-0">
+                <select
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  aria-label="Category"
+                  className="w-full md:w-auto appearance-none truncate bg-transparent border-b border-foreground/15 focus:border-accent outline-none py-2.5 pr-7 text-base font-medium cursor-pointer transition-colors"
+                >
+                  {PRODUCT_CATEGORIES.map((cat) => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary pointer-events-none" />
               </div>
-              <button
-                type="button"
-                onClick={() => adjustBid(1)}
-                aria-label="Increase bid"
-                className="w-9 h-9 flex items-center justify-center text-secondary hover:text-foreground transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
+
+              <div className="flex items-center gap-0.5 shrink-0 max-md:rounded-full max-md:border max-md:border-border/70 max-md:bg-white/70 max-md:px-1">
+                <button
+                  type="button"
+                  onClick={() => adjustBid(-1)}
+                  disabled={bidAmount <= minBid}
+                  aria-label="Decrease bid"
+                  className="w-9 h-9 flex items-center justify-center text-secondary hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <div className="flex items-center min-w-[64px] md:min-w-[80px] justify-center border-b border-foreground/20 focus-within:border-accent transition-colors max-md:border-b-0">
+                  <span className="text-secondary text-base select-none">$</span>
+                  <input
+                    type="number"
+                    min={minBid}
+                    step="1"
+                    value={bidAmount}
+                    onChange={handleBidInputChange}
+                    aria-label="Bid amount"
+                    className="w-12 md:w-16 bg-transparent text-center font-semibold text-lg outline-none appearance-none m-0 py-1.5 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => adjustBid(1)}
+                  aria-label="Increase bid"
+                  className="w-9 h-9 flex items-center justify-center text-secondary hover:text-foreground transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={isProcessing}
-              className="group btn-primary shrink-0 inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-full text-base font-semibold disabled:opacity-60"
+              className="group btn-primary w-full md:w-auto shrink-0 inline-flex items-center justify-center gap-1.5 px-6 py-3 md:py-2.5 rounded-full text-base font-semibold disabled:opacity-60"
             >
               Hop Up
               <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
             </button>
           </div>
 
-          <div className="mt-3 flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
-            <input
-              ref={logoInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/svg+xml,image/webp"
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                e.target.value = "";
-                if (!file) return;
+          <input
+            ref={logoInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              try {
+                const objectUrl = URL.createObjectURL(file);
                 try {
-                  const objectUrl = URL.createObjectURL(file);
-                  try {
-                    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-                      const el = new Image();
-                      el.onload = () => resolve(el);
-                      el.onerror = () => reject(new Error("Could not read that image"));
-                      el.src = objectUrl;
-                    });
-                    const size = 512;
-                    const canvas = document.createElement("canvas");
-                    canvas.width = size;
-                    canvas.height = size;
-                    const ctx = canvas.getContext("2d")!;
-                    const scale = Math.max(size / img.width, size / img.height);
-                    ctx.drawImage(
-                      img,
-                      (size - img.width * scale) / 2,
-                      (size - img.height * scale) / 2,
-                      img.width * scale,
-                      img.height * scale
-                    );
-                    setLogoDataUrl(canvas.toDataURL("image/png"));
-                  } finally {
-                    URL.revokeObjectURL(objectUrl);
-                  }
-                } catch {
-                  setLogoDataUrl(null);
+                  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+                    const el = new Image();
+                    el.onload = () => resolve(el);
+                    el.onerror = () => reject(new Error("Could not read that image"));
+                    el.src = objectUrl;
+                  });
+                  const size = 512;
+                  const canvas = document.createElement("canvas");
+                  canvas.width = size;
+                  canvas.height = size;
+                  const ctx = canvas.getContext("2d")!;
+                  const scale = Math.max(size / img.width, size / img.height);
+                  ctx.drawImage(
+                    img,
+                    (size - img.width * scale) / 2,
+                    (size - img.height * scale) / 2,
+                    img.width * scale,
+                    img.height * scale
+                  );
+                  setLogoDataUrl(canvas.toDataURL("image/png"));
+                } finally {
+                  URL.revokeObjectURL(objectUrl);
                 }
-              }}
-            />
-            {logoDataUrl ? (
-              <span className="inline-flex items-center gap-2 self-center md:self-auto">
-                <img src={logoDataUrl} alt="" className="w-7 h-7 rounded-md border border-border/50 bg-white object-contain" />
-                <button
-                  type="button"
-                  onClick={() => logoInputRef.current?.click()}
-                  className="text-[12px] font-semibold text-foreground hover:text-accent-dark"
-                >
-                  Replace logo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLogoDataUrl(null)}
-                  aria-label="Remove uploaded logo"
-                  className="text-secondary hover:text-foreground"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => logoInputRef.current?.click()}
-                className="inline-flex items-center justify-center gap-1.5 self-center md:self-auto text-[12px] font-semibold text-secondary hover:text-foreground transition-colors"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                Upload logo
-              </button>
-            )}
-          </div>
+              } catch {
+                setLogoDataUrl(null);
+              }
+            }}
+          />
 
-          <p className="mt-2 text-sm text-secondary text-center md:text-left">
-            {showHofTarget && wouldTakeHof ? (
-              <span className="font-semibold text-foreground">
-                Takes <span className="text-accent">Hall of Fame</span>
-              </span>
-            ) : showHofTarget ? (
+          <div className="mt-3 hidden md:flex md:items-center md:gap-3">{logoControl}</div>
+
+          <p className="mt-3 md:mt-2 text-sm text-secondary text-center md:text-left">
+            {claimingHof ? (
               <>
-                {isBoardRank1 && (
-                  <>
-                    <span className="font-semibold text-foreground">You&apos;re #1</span>
-                    {" · "}
-                  </>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    applyBid(amountToTakeHof, { lockMin: amountToTakeHof, hof: true });
-                    urlInputRef.current?.focus();
-                  }}
-                  className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
-                >
-                  {matchedListing
-                    ? `$${amountToTakeHof} more to claim Hall of Fame`
-                    : `$${amountToTakeHof} to claim Hall of Fame`}
-                </button>
-              </>
-            ) : url.trim() && expectedRank > 1 ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    applyBid(amountForRank1);
-                    urlInputRef.current?.focus();
-                  }}
-                  className="font-semibold text-accent hover:underline underline-offset-2 tabular-nums"
-                >
-                  {matchedListing
-                    ? `$${amountForRank1} more to take rank #1`
-                    : `Take rank #1 for $${amountForRank1}`}
-                </button>
-                <span className="text-secondary/70">
-                  {" · "}all time #{expectedRank}
+                <span className="font-semibold text-foreground">
+                  This payment takes <span className="text-accent">Hall of Fame</span>
                 </span>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={showRecentBoard}
-                  className="font-semibold text-foreground hover:text-accent transition-colors tabular-nums"
-                >
-                  #{expectedRecentRank} on Last 48 hrs
-                </button>
-                <span className="text-secondary/70">
-                  {" · "}all time #{expectedRank}
-                </span>
-              </>
-            )}
-            {urlFloor === LOL_MIN_BID && (
-              <span className="text-secondary/70">{" · "}$1 min for .lol</span>
-            )}
-            {!showHofTarget &&
-              expectedRecentRank > 1 &&
-              amountForRecentRank1 < amountForRank1 && (
-              <>
                 {" · "}
                 <button
                   type="button"
-                    onClick={() => {
-                      applyBid(amountForRecentRank1);
-                      urlInputRef.current?.focus();
-                    }}
-                  className="text-accent hover:underline underline-offset-2"
+                  onClick={() => applyBid(weekHasLeader ? claimThisWeek : urlFloor)}
+                  className="font-semibold text-accent hover:underline underline-offset-2"
                 >
-                  take 48hr #1 for ${amountForRecentRank1}
+                  Back to this week
                 </button>
               </>
+            ) : (
+              <span>
+                {matchedWeek > 0
+                  ? `This adds to the $${matchedWeek} already on this week. All time adds it to your total.`
+                  : "This payment is this week's rank. All time adds it to your total."}
+              </span>
+            )}
+            {urlFloor === LOL_MIN_BID && (
+              <span className="text-secondary/70">{" · "}$1 min for .lol</span>
             )}
           </p>
         </motion.form>

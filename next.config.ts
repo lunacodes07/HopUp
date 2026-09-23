@@ -29,6 +29,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/og.png", destination: "/og.jpg", permanent: true },
       { source: "/ogstanley.png", destination: "/ogstanley.jpg", permanent: true },
+      { source: "/last-48-hours", destination: "/", permanent: true },
+      { source: "/last-48-hours/:page", destination: "/", permanent: true },
     ];
   },
 };

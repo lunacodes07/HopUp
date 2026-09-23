@@ -1,13 +1,12 @@
 import { idPrefixFromSlug, productSlug } from "@/lib/product-path";
 import type { Product } from "@/types";
+import { allTimeList, findHof } from "@/lib/week";
 
 export function withBoardRanks(products: Product[]): Product[] {
-  if (products.length < 2) return products;
-  const champId = products[0].id;
-  let next = 1;
-  return products.map((item) =>
-    item.id === champId ? { ...item, rank: 0 } : { ...item, rank: next++ }
-  );
+  const hof = findHof(products);
+  const ranked = allTimeList(products).map((item, idx) => ({ ...item, rank: idx + 1 }));
+  if (!hof) return ranked;
+  return [{ ...hof, rank: 0 }, ...ranked];
 }
 
 export function findProductBySlug(products: Product[], slug: string): Product | null {
