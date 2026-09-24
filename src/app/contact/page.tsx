@@ -24,8 +24,8 @@ export default function ContactPage() {
               <p className="text-secondary text-base mb-5">
                 The best way to reach us is via email. We typically respond within 24 hours.
               </p>
-              <a href="mailto:lunacodes07@gmail.com" className="text-accent font-semibold hover:underline">
-                lunacodes07@gmail.com
+              <a href="mailto:contact.hopup.lol@gmail.com" className="text-accent font-semibold hover:underline break-all">
+                contact.hopup.lol@gmail.com
               </a>
             </div>
 
