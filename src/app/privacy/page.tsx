@@ -29,7 +29,15 @@ export default function PrivacyPage() {
 
           <h2 className="text-2xl font-bold mt-8 mb-4 text-foreground">4. Contact Us</h2>
           <p className="text-secondary mb-6">
-            If you have any questions about this Privacy Policy, please contact us at @alohaproxy on X.
+            If you have any questions about this Privacy Policy, please contact us at{" "}
+            <a href="mailto:contact.hopup.lol@gmail.com" className="text-accent font-semibold hover:underline break-all">
+              contact.hopup.lol@gmail.com
+            </a>{" "}
+            or{" "}
+            <a href="https://x.com/alohaproxy" className="text-accent font-semibold hover:underline">
+              @alohaproxy
+            </a>{" "}
+            on X.
           </p>
         </div>
       </main>

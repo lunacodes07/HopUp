@@ -13,6 +13,17 @@ export type Testimonial = {
 
 export const TESTIMONIALS: Testimonial[] = [
   {
+    name: "Cole Crown Adrian",
+    handle: "DamolaAderibig1",
+    date: "Sep 24, 2026",
+    posted: "2026-09-24",
+    comment:
+      "Wish to be no 1 again because I had a lot of clicks, still getting them at no 20 😂",
+    tint: "tint-bubblegum",
+    hoppy: "wink",
+    tilt: "-rotate-1",
+  },
+  {
     name: "The Cozy Dev",
     handle: "The_CozyDev",
     date: "Sep 20, 2026",

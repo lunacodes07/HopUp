@@ -32,7 +32,15 @@ export default function RefundsPage() {
 
           <h2 className="text-2xl font-bold mt-8 mb-4 text-foreground">4. Charged and never listed</h2>
           <p className="text-secondary mb-6">
-            If a payment went through and we never placed you — a system failure, not a hop — write @alohaproxy on X within 7 days with proof of purchase. We may fix the listing. Getting hopped or outbid is not this case.
+            If a payment went through and we never placed you — a system failure, not a hop — write{" "}
+            <a href="mailto:contact.hopup.lol@gmail.com" className="text-accent font-semibold hover:underline break-all">
+              contact.hopup.lol@gmail.com
+            </a>{" "}
+            or{" "}
+            <a href="https://x.com/alohaproxy" className="text-accent font-semibold hover:underline">
+              @alohaproxy
+            </a>{" "}
+            on X within 7 days with proof of purchase. We may fix the listing. Getting hopped or outbid is not this case.
           </p>
         </div>
       </main>
