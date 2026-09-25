@@ -1,0 +1,43 @@
+{
+  "products": [
+    {
+      "id": "d65b3f13-4a7f-4d98-886f-277e9917cec1",
+      "created_at": "2026-09-21T14:54:53.022026+00:00",
+      "rank": 0,
+      "name": "MeetHint — Know before you answer",
+      "description": "Real-time, evidence-backed answers for technical conversations. Grounded in your repos, docs, and company knowledge.",
+      "category": "AI tools",
+      "clicks": 91,
+      "price": 5,
+      "url": "https://MeetHint.ai",
+      "last_hopped_at": "2026-09-21T14:54:52.3+00:00",
+      "logo_url": "https://vhcrztbdslwqfrpgvmmy.supabase.co/storage/v1/object/public/product-logos/d65b3f13-4a7f-4d98-886f-277e9917cec1.png",
+      "upvotes": 1,
+      "week_bid": null,
+      "is_hof": false
+    },
+    {
+      "id": "cacc41a5-4b27-4c5a-8fbe-333b1f701e23",
+      "created_at": "2026-09-25T13:18:28.876759+00:00",
+      "rank": 0,
+      "name": "MeetHint — Know before you answer",
+      "description": "Real-time, evidence-backed answers for technical conversations. Grounded in your repos, docs, and company knowledge.",
+      "category": "DevTools",
+      "clicks": 4,
+      "price": 10,
+      "url": "https://Meethint.ai",
+      "last_hopped_at": "2026-09-25T13:18:27.747+00:00",
+      "logo_url": "https://vhcrztbdslwqfrpgvmmy.supabase.co/storage/v1/object/public/product-logos/cacc41a5-4b27-4c5a-8fbe-333b1f701e23.png",
+      "upvotes": 0,
+      "week_bid": 10,
+      "is_hof": false
+    }
+  ],
+  "product_votes": [
+    {
+      "product_id": "d65b3f13-4a7f-4d98-886f-277e9917cec1",
+      "voter_hash": "b674dd1063b8d2d6011c3298f9c904bda36ad7f95cbb0e1a64d70be63bd5a06f",
+      "created_at": "2026-09-22T11:14:24.618882+00:00"
+    }
+  ]
+}

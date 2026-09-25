@@ -17,6 +17,7 @@ import { getStanleySlot } from '@/lib/stanley-slots-server';
 import { getFormattedUrlInfo } from '@/lib/format-url';
 import { storeStanleyLogo } from '@/lib/stanley-logo-server';
 import { storePendingProductLogo } from '@/lib/product-logo-server';
+import { findListingByUrl } from '@/lib/find-listing-server';
 
 // Safely initialize Upstash Ratelimit only if the environment variables exist
 const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN 
@@ -156,13 +157,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const { data: existingData } = await supabaseServer
-        .from("products")
-        .select("*")
-        .in('url', [url, url + '/'])
-        .limit(1);
-
-      const existingProduct = existingData && existingData.length > 0 ? existingData[0] : null;
+      const existingProduct = await findListingByUrl(url);
 
       let storedLogo: string | null = null;
       if (typeof logoDataUrl === 'string' && logoDataUrl.startsWith('data:image/')) {
