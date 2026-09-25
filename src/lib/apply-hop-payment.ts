@@ -1,5 +1,6 @@
 import { supabaseServer } from "@/lib/supabase-server";
 import { fetchMetadata } from "@/lib/metadata";
+import { findListingByUrl } from "@/lib/find-listing-server";
 import { applyPendingProductLogo, isPendingProductLogo, storeResolvedProductLogo } from "@/lib/product-logo-server";
 import { hallOfFameClaimPrice } from "@/lib/hof";
 import { addedWeekBid, type WeekListing } from "@/lib/week";
@@ -34,12 +35,7 @@ export async function applyHopPayment(paymentData: {
   }
 
   if (!existingProduct) {
-    const { data } = await supabaseServer
-      .from("products")
-      .select("*")
-      .in("url", [url, url + "/"])
-      .limit(1);
-    existingProduct = data?.[0];
+    existingProduct = await findListingByUrl(url);
   }
 
   if (existingProduct) {
