@@ -2,6 +2,7 @@ export const PRODUCT_CATEGORIES = [
   { value: "DevTools", label: "Developer Tools" },
   { value: "AI tools", label: "AI tools" },
   { value: "AI Agents", label: "AI Agents" },
+  { value: "Security", label: "Security" },
   { value: "Marketing", label: "Marketing" },
   { value: "SEO", label: "SEO" },
   { value: "Design", label: "Design" },

@@ -41,7 +41,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+# Videos and Utilities
 .blender-scratch/
+.siren-scratch/
+
 
 # Brand My Backpack — local only, do not ship to GitHub / Vercel
 /public/brandmybackpack/
