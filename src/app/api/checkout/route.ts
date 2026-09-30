@@ -10,7 +10,7 @@ import { findHof, type WeekListing } from '@/lib/week';
 import { DEFAULT_CATEGORY, isProductCategory } from '@/lib/categories';
 import { CREATOR_COOKIE } from '@/lib/creators';
 import { getCreatorBySlug } from '@/lib/creators-server';
-import { getSponsorPlan, isValidSlotNumber } from '@/lib/sponsored';
+import { getSponsorPlan, HOUSE_SPONSOR, isValidSlotNumber } from '@/lib/sponsored';
 import { isSlotAvailable } from '@/lib/sponsored-server';
 import { isValidStanleySlot, stanleyNextSlotPrice } from '@/lib/stanley-slots';
 import { getStanleySlot } from '@/lib/stanley-slots-server';
@@ -113,6 +113,9 @@ export async function POST(request: Request) {
       }
       if (!isValidSlotNumber(slotNumber)) {
         return NextResponse.json({ error: 'Invalid sponsored slot' }, { status: 400 });
+      }
+      if (HOUSE_SPONSOR && slotNumber === HOUSE_SPONSOR.slot) {
+        return NextResponse.json({ error: "That spot isn't for sale." }, { status: 409 });
       }
 
       try {
