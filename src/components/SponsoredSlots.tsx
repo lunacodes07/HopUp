@@ -9,10 +9,29 @@ import { getProxiedLogoUrl, handleLogoError } from "@/lib/logo";
 import { withHopupRef } from "@/lib/product-path";
 import { rememberPendingShare } from "@/lib/share";
 import { DEFAULT_CATEGORY, PRODUCT_CATEGORIES } from "@/lib/categories";
-import { SPONSOR_PLANS, SPONSOR_SLOT_COUNT, type SponsorPlan } from "@/lib/sponsored";
+import { HOUSE_SPONSOR, SPONSOR_PLANS, SPONSOR_SLOT_COUNT, type SponsorPlan } from "@/lib/sponsored";
 import type { SponsoredSlot } from "@/types";
 
 const SPOTS = Array.from({ length: SPONSOR_SLOT_COUNT }, (_, i) => i + 1);
+const SPOT_ORDER = HOUSE_SPONSOR
+  ? [HOUSE_SPONSOR.slot, ...SPOTS.filter((n) => n !== HOUSE_SPONSOR.slot)]
+  : SPOTS;
+const OPEN_SPOTS = SPONSOR_SLOT_COUNT - (HOUSE_SPONSOR ? 1 : 0);
+
+const HOUSE_LISTING: SponsoredSlot | null = HOUSE_SPONSOR
+  ? {
+      id: "house-sponsor",
+      slot_number: HOUSE_SPONSOR.slot,
+      name: HOUSE_SPONSOR.name,
+      description: HOUSE_SPONSOR.description,
+      category: HOUSE_SPONSOR.category,
+      url: HOUSE_SPONSOR.url,
+      clicks: 0,
+      price: 0,
+      weeks: 0,
+      expires_at: "2099-01-01T00:00:00.000Z",
+    }
+  : null;
 
 const getTimeLeft = (expiresAt: string) => {
   const ms = new Date(expiresAt).getTime() - Date.now();
@@ -69,9 +88,12 @@ function EmptyCard({
 }
 
 function FilledCard({ slot, large }: { slot: SponsoredSlot; large?: boolean }) {
-  const href = withHopupRef(slot.url) || slot.url;
+  const house = slot.price <= 0;
+  // The house link already carries its own referral. Don't add HopUp's ref on top.
+  const href = house ? slot.url : (withHopupRef(slot.url) || slot.url);
 
   const trackClick = () => {
+    if (house) return;
     supabase.rpc("increment_sponsored_clicks", { p_slot_id: slot.id }).then(({ error }) => {
       if (error) console.error("Failed to track sponsored click:", error.message);
     });
@@ -95,13 +117,15 @@ function FilledCard({ slot, large }: { slot: SponsoredSlot; large?: boolean }) {
       <span className={`absolute left-2 font-semibold uppercase leading-none tracking-[0.12em] text-secondary/65 ${
         large ? "top-2 text-[10px]" : "top-1 text-[8px]"
       }`}>
-        Ad
+        {house ? "Featured" : "Ad"}
       </span>
-      <span className={`absolute right-2 leading-none tabular-nums text-secondary/65 ${
-        large ? "top-2 text-[11px]" : "top-1 text-[8px]"
-      }`}>
-        {getTimeLeft(slot.expires_at)}
-      </span>
+      {!house && (
+        <span className={`absolute right-2 leading-none tabular-nums text-secondary/65 ${
+          large ? "top-2 text-[11px]" : "top-1 text-[8px]"
+        }`}>
+          {getTimeLeft(slot.expires_at)}
+        </span>
+      )}
       <div className={`relative shrink-0 overflow-hidden rounded-lg bg-muted ${
         large ? "h-12 w-12 rounded-xl" : "h-8 w-8"
       }`}>
@@ -430,7 +454,7 @@ export default function SponsoredSlots({ variant = "default" }: { variant?: "def
   const sidebar = variant === "sidebar";
 
   const renderCard = (n: number, key: string, wide: boolean, hidden = false) => {
-    const listing = bySlot.get(n);
+    const listing = n === HOUSE_LISTING?.slot_number ? HOUSE_LISTING : bySlot.get(n);
     return (
       <div key={key} aria-hidden={hidden || undefined} className={wide ? "w-[72vw] max-w-[300px] shrink-0" : "w-full min-w-0"}>
         {listing ? (
@@ -455,13 +479,13 @@ export default function SponsoredSlots({ variant = "default" }: { variant?: "def
           </p>
         </div>
         <p className="shrink-0 pb-0.5 text-[11px] tabular-nums text-secondary">
-          from $30/week · {SPONSOR_SLOT_COUNT} spots
+          from $30/week · {OPEN_SPOTS} spots
         </p>
       </div>
 
       {sidebar ? (
         <div className="grid grid-cols-1 gap-3.5">
-          {SPOTS.map((n) => renderCard(n, String(n), false))}
+          {SPOT_ORDER.map((n) => renderCard(n, String(n), false))}
         </div>
       ) : (
         <>
@@ -475,12 +499,12 @@ export default function SponsoredSlots({ variant = "default" }: { variant?: "def
                 claimSlot !== null ? "[animation-play-state:paused]" : ""
               }`}
             >
-              {SPOTS.map((n) => renderCard(n, `loop-${n}`, true))}
-              {SPOTS.map((n) => renderCard(n, `loop-${n}-copy`, true, true))}
+              {SPOT_ORDER.map((n) => renderCard(n, `loop-${n}`, true))}
+              {SPOT_ORDER.map((n) => renderCard(n, `loop-${n}-copy`, true, true))}
             </div>
           </div>
           <div className="hidden md:grid md:grid-cols-3 md:gap-2.5">
-            {SPOTS.map((n) => renderCard(n, `grid-${n}`, false))}
+            {SPOT_ORDER.map((n) => renderCard(n, `grid-${n}`, false))}
           </div>
         </>
       )}

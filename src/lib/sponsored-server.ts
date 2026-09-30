@@ -1,5 +1,5 @@
 import { supabaseServer } from "@/lib/supabase-server";
-import { SPONSOR_SLOT_COUNT } from "@/lib/sponsored";
+import { HOUSE_SPONSOR, SPONSOR_SLOT_COUNT } from "@/lib/sponsored";
 
 export async function getOccupiedSlotNumbers(): Promise<number[]> {
   const { data, error } = await supabaseServer
@@ -8,7 +8,9 @@ export async function getOccupiedSlotNumbers(): Promise<number[]> {
     .gt("expires_at", new Date().toISOString());
 
   if (error) throw error;
-  return (data ?? []).map((row) => row.slot_number);
+  const taken = (data ?? []).map((row) => row.slot_number);
+  if (HOUSE_SPONSOR) taken.push(HOUSE_SPONSOR.slot);
+  return [...new Set(taken)];
 }
 
 export async function isSlotAvailable(slotNumber: number): Promise<boolean> {
