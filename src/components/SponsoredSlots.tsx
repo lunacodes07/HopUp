@@ -13,19 +13,20 @@ import { HOUSE_SPONSOR, SPONSOR_PLANS, SPONSOR_SLOT_COUNT, type SponsorPlan } fr
 import type { SponsoredSlot } from "@/types";
 
 const SPOTS = Array.from({ length: SPONSOR_SLOT_COUNT }, (_, i) => i + 1);
-const SPOT_ORDER = HOUSE_SPONSOR
-  ? [HOUSE_SPONSOR.slot, ...SPOTS.filter((n) => n !== HOUSE_SPONSOR.slot)]
+const houseSponsor = HOUSE_SPONSOR;
+const SPOT_ORDER = houseSponsor
+  ? [houseSponsor.slot, ...SPOTS.filter((n) => n !== houseSponsor.slot)]
   : SPOTS;
-const OPEN_SPOTS = SPONSOR_SLOT_COUNT - (HOUSE_SPONSOR ? 1 : 0);
+const OPEN_SPOTS = SPONSOR_SLOT_COUNT - (houseSponsor ? 1 : 0);
 
-const HOUSE_LISTING: SponsoredSlot | null = HOUSE_SPONSOR
+const HOUSE_LISTING: SponsoredSlot | null = houseSponsor
   ? {
       id: "house-sponsor",
-      slot_number: HOUSE_SPONSOR.slot,
-      name: HOUSE_SPONSOR.name,
-      description: HOUSE_SPONSOR.description,
-      category: HOUSE_SPONSOR.category,
-      url: HOUSE_SPONSOR.url,
+      slot_number: houseSponsor.slot,
+      name: houseSponsor.name,
+      description: houseSponsor.description,
+      category: houseSponsor.category,
+      url: houseSponsor.url,
       clicks: 0,
       price: 0,
       weeks: 0,
