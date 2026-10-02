@@ -1,3 +1,4 @@
+import { fetchRemoteImage, isSafePublicUrl } from "@/lib/resolve-logo";
 import { supabaseServer } from "@/lib/supabase-server";
 import { isOurSupabaseStorageUrl } from "@/lib/supabase-storage-url";
 
@@ -190,12 +191,16 @@ export async function storeResolvedProductLogo(productId: string, pageUrl: strin
   }
 }
 
-export async function getStoredProductLogo(
-  productId: string
-): Promise<{ body: Blob; type: string } | null> {
-  if (!isProductId(productId)) return null;
-  if (!(await productHasUploadedLogo(productId))) return null;
+async function readProductLogoUrl(productId: string): Promise<string | null> {
+  const { data } = await supabaseServer
+    .from("products")
+    .select("logo_url")
+    .eq("id", productId)
+    .maybeSingle();
+  return typeof data?.logo_url === "string" && data.logo_url ? data.logo_url : null;
+}
 
+async function downloadStoredFile(productId: string): Promise<{ body: Blob; type: string } | null> {
   for (const ext of EXTS) {
     const { data, error } = await supabaseServer.storage.from(BUCKET).download(objectPath(productId, ext));
     if (error || !data) continue;
@@ -206,4 +211,54 @@ export async function getStoredProductLogo(
     };
   }
   return null;
+}
+
+function rasterDataUri(image: { body: ArrayBuffer; type: string }): string | null {
+  const type = image.type === "image/jpeg" || image.type === "image/jpg"
+    ? "image/jpeg"
+    : image.type === "image/webp"
+      ? "image/webp"
+      : image.type === "image/png"
+        ? "image/png"
+        : null;
+  if (!type) return null;
+  return `data:${type};base64,${Buffer.from(image.body).toString("base64")}`;
+}
+
+/** A logo_url outside our bucket replaces the favicon saved at hop time. */
+async function adoptExternalProductLogo(
+  productId: string,
+  logoUrl: string
+): Promise<{ body: Blob; type: string } | null> {
+  const image = await fetchRemoteImage(logoUrl);
+  const uri = image ? rasterDataUri(image) : null;
+  if (!image || !uri) return null;
+
+  try {
+    await storeProductLogo(productId, uri);
+  } catch (error) {
+    console.error("Adopt external product logo failed:", error);
+  }
+
+  const type = uri.startsWith("data:image/jpeg")
+    ? "image/jpeg"
+    : uri.startsWith("data:image/webp")
+      ? "image/webp"
+      : "image/png";
+  return { body: new Blob([new Uint8Array(image.body)]), type };
+}
+
+export async function getStoredProductLogo(
+  productId: string
+): Promise<{ body: Blob; type: string } | null> {
+  if (!isProductId(productId)) return null;
+  const logoUrl = await readProductLogoUrl(productId);
+  if (!logoUrl) return null;
+
+  if (!isStoredProductLogoUrl(logoUrl) && isSafePublicUrl(logoUrl)) {
+    const adopted = await adoptExternalProductLogo(productId, logoUrl);
+    if (adopted) return adopted;
+  }
+
+  return downloadStoredFile(productId);
 }
