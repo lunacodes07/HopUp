@@ -25,6 +25,16 @@ export function getProxiedLogoUrl(raw?: string | null): string {
   }
 }
 
+/** Changes when logo_url changes, so a replaced mark misses the day-long CDN cache. */
+function logoVersion(logoUrl: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < logoUrl.length; i++) {
+    hash ^= logoUrl.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 /** Always a same-origin path so Vercel can cache bytes / validated redirects. */
 export function getProductLogoUrl(product: {
   id?: string;
@@ -42,6 +52,7 @@ export function getProductLogoUrl(product: {
         // id-only still hits stored bytes
       }
     }
+    if (product.logo_url) params.set("v", logoVersion(product.logo_url));
     return `/api/logo?${params}`;
   }
   if (product.logo_url) {
