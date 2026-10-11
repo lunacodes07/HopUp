@@ -25,7 +25,6 @@
   
   --animate-marquee: marquee 30s linear infinite;
   --animate-sponsor-marquee: sponsor-marquee 22s linear infinite;
-  --animate-testimonial-marquee: testimonial-marquee 42s linear infinite;
   --animate-hof-shimmer: hof-shimmer 3.6s ease-in-out infinite;
   --animate-hof-glow: hof-glow 2.8s ease-in-out infinite;
   --animate-hof-sparkle: hof-sparkle 2.2s ease-in-out infinite;
@@ -39,12 +38,6 @@
   }
 
   @keyframes sponsor-marquee {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
-  }
-
-  /* Cards enter from the right and drift left. */
-  @keyframes testimonial-marquee {
     from { transform: translateX(0); }
     to { transform: translateX(-50%); }
   }
@@ -294,7 +287,6 @@ body {
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .testimonial-track,
     .sponsor-track {
       animation: none !important;
       transform: none !important;

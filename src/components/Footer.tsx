@@ -23,7 +23,6 @@ export default function Footer() {
             {[
               ["/#leaderboard", "Leaderboard"],
               ["/p", "Listings"],
-              ["/#testimonials", "Testimonials"],
               ["/contact", "Contact"],
               ["/terms", "Terms"],
               ["/privacy", "Privacy"],
