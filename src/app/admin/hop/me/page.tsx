@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import AdminLogos from "@/components/AdminLogos";
 import AdminLogin from "@/components/AdminLogin";
 import { ADMIN_COOKIE, adminMustAuthenticate, adminSecret, isAdminToken } from "@/lib/admin-auth";
+import { isProductionRuntime } from "@/lib/runtime-env";
 
 export const metadata: Metadata = {
   title: "Admin — HopUp",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPage() {
-  if (process.env.NODE_ENV === "production" && !adminSecret()) {
+  if (isProductionRuntime && !adminSecret()) {
     notFound();
   }
 

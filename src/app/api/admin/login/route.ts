@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ADMIN_COOKIE, adminSecret, adminSessionToken, secretsMatch } from "@/lib/admin-auth";
+import { isProductionRuntime } from "@/lib/runtime-env";
 
 export async function POST(request: Request) {
   const secret = adminSecret();
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
       path: "/",
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: isProductionRuntime,
       maxAge: 60 * 60 * 24 * 7,
     });
     return response;

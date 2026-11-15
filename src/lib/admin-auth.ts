@@ -1,5 +1,6 @@
 export const ADMIN_COOKIE = "hopup_admin";
 const SESSION_MARK = "hopup-admin-session";
+import { isProductionRuntime } from "@/lib/runtime-env";
 
 export function adminSecret(): string | null {
   const value = process.env.HOPUP_ADMIN_SECRET?.trim();
@@ -8,7 +9,7 @@ export function adminSecret(): string | null {
 
 /** Production always requires a secret. Local can stay unlocked if none is set. */
 export function adminMustAuthenticate(): boolean {
-  return Boolean(adminSecret()) || process.env.NODE_ENV === "production";
+  return Boolean(adminSecret()) || isProductionRuntime;
 }
 
 export function secretsMatch(given: string, expected: string): boolean {

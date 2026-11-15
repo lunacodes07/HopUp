@@ -7,13 +7,14 @@ import {
   cookieMaxAge,
   normalizeCreatorSlug,
 } from "@/lib/creators";
+import { isProductionRuntime } from "@/lib/runtime-env";
 
 function cookieOptions(maxAge?: number) {
   return {
     path: "/",
     ...(typeof maxAge === "number" ? { maxAge } : {}),
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    secure: isProductionRuntime,
     httpOnly: true,
   };
 }
@@ -21,7 +22,7 @@ function cookieOptions(maxAge?: number) {
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   if (
-    process.env.NODE_ENV === "production" &&
+    isProductionRuntime &&
     !process.env.HOPUP_ADMIN_SECRET &&
     (path === "/admin/hop/me" || path.startsWith("/admin/hop/me/"))
   ) {

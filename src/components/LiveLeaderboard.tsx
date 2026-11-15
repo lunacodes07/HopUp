@@ -79,7 +79,7 @@ export default function LiveLeaderboard({
       try {
         const { data, error } = await supabase
           .from("products")
-          .select("*")
+          .select("id, name, description, category, clicks, upvotes, price, week_bid, is_hof, url, logo_url, created_at, last_hopped_at")
           .order("price", { ascending: false })
           .order("created_at", { ascending: true });
 
@@ -95,7 +95,14 @@ export default function LiveLeaderboard({
       }
     };
 
-    fetchData();
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+
+    // The page already receives the ranked list from the server. Only fetch
+    // immediately when that initial render had no data; realtime changes can
+    // refresh it later without doubling the first-load Supabase request.
+    if (initialProducts.length === 0) {
+      void fetchData();
+    }
 
     const subscription = supabase
       .channel("products_changes_full")
@@ -103,15 +110,17 @@ export default function LiveLeaderboard({
         "postgres_changes",
         { event: "*", schema: "public", table: "products" },
         () => {
-          fetchData();
+          if (refreshTimer) clearTimeout(refreshTimer);
+          refreshTimer = setTimeout(() => void fetchData(), 500);
         }
       )
       .subscribe();
 
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
       supabase.removeChannel(subscription);
     };
-  }, []);
+  }, [initialProducts.length]);
 
   const champion = useMemo(() => findHof(leaderboardData), [leaderboardData]);
 

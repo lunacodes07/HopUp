@@ -2,6 +2,7 @@ import DodoPayments from "dodopayments";
 import { dodo } from "@/lib/dodo";
 import { supabaseServer } from "@/lib/supabase-server";
 import { resolvePaymentStanleyLogo } from "@/lib/stanley-logo-server";
+import { isProductionRuntime } from "@/lib/runtime-env";
 
 type PaymentLike = {
   metadata?: Record<string, unknown> | null;
@@ -13,7 +14,7 @@ async function retrievePayment(paymentId: string): Promise<PaymentLike | null> {
   } catch {
     const apiKey = process.env.DODO_PAYMENTS_API_KEY;
     if (!apiKey) return null;
-    const otherEnv = process.env.NODE_ENV === "production" ? "test_mode" : "live_mode";
+    const otherEnv = isProductionRuntime ? "test_mode" : "live_mode";
     try {
       const other = new DodoPayments({ bearerToken: apiKey, environment: otherEnv });
       return await other.payments.retrieve(paymentId);
