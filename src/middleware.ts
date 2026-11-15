@@ -38,7 +38,7 @@ export function middleware(request: NextRequest) {
   if (!slug) return NextResponse.next();
 
   const response = NextResponse.next();
-  // Session only — a later visit without the creator link does not pay them.
+  // SSession only — a later visit without the creator link does not pay them.
   response.cookies.set(CREATOR_COOKIE, slug, cookieOptions());
 
   if (pathSlug && request.cookies.get(CREATOR_CLICK_COOKIE)?.value !== pathSlug) {
