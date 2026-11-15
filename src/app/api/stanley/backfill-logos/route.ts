@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { backfillMissingStanleyLogos } from "@/lib/backfill-stanley-logos";
+import { isProductionRuntime } from "@/lib/runtime-env";
 
 export async function POST() {
-  if (process.env.NODE_ENV === "production") {
+  if (isProductionRuntime) {
     return NextResponse.json({ error: "Not available" }, { status: 404 });
   }
 

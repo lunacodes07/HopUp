@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { confirmLocalStanleyPayment } from "@/lib/confirm-local-stanley-payment";
 import { getFormattedUrlInfo } from "@/lib/format-url";
 import { isValidStanleySlot } from "@/lib/stanley-slots";
+import { isProductionRuntime } from "@/lib/runtime-env";
 
 export async function POST(request: Request) {
-  if (process.env.NODE_ENV === "production") {
+  if (isProductionRuntime) {
     return NextResponse.json({ error: "Not available" }, { status: 404 });
   }
 

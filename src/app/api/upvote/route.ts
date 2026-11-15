@@ -8,6 +8,7 @@ import {
   upvoteRateLimited,
   voterHashFromRequest,
 } from "@/lib/upvote-guard";
+import { isProductionRuntime } from "@/lib/runtime-env";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -21,7 +22,7 @@ function votedCookie(ids: string[]) {
       path: "/",
       httpOnly: true,
       sameSite: "lax" as const,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProductionRuntime,
       maxAge: 60 * 60 * 24 * 365,
     },
   };
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
   if (claim === "duplicate") {
     return already(await currentUpvotes(productId), [...voted, productId]);
   }
-  if (claim === "unavailable" && process.env.NODE_ENV === "production") {
+  if (claim === "unavailable" && isProductionRuntime) {
     console.error("Upvote Redis guard unavailable; falling back to cookie + SQL.");
   }
 

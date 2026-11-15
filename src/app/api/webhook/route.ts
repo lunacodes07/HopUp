@@ -5,6 +5,7 @@ import { applySponsoredPayment } from '@/lib/apply-sponsored-payment';
 import { applyStanleyPayment } from '@/lib/apply-stanley-payment';
 import { backfillMissingStanleyLogos } from '@/lib/backfill-stanley-logos';
 import { recordReferralSale } from '@/lib/creators-server';
+import { isLocalDevelopment } from '@/lib/runtime-env';
 
 export async function POST(request: Request) {
   try {
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
 
       // Local/dev never writes hops or sponsored slots — those are live hopup.lol.
       // Stanley is a new table, so test-mode Dodo checkouts can fill a cup spot locally.
-      if (process.env.NODE_ENV !== 'production') {
+      if (isLocalDevelopment) {
         if (paymentData.metadata?.hopup_kind === 'stanley') {
           await applyStanleyPayment(paymentData);
           await recordReferralSale(paymentData);

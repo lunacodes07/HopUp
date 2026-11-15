@@ -3,6 +3,7 @@ import { applyStanleyPayment } from "@/lib/apply-stanley-payment";
 import { backfillMissingStanleyLogos } from "@/lib/backfill-stanley-logos";
 import { recordReferralSale } from "@/lib/creators-server";
 import { isValidStanleySlot } from "@/lib/stanley-slots";
+import { isProductionRuntime } from "@/lib/runtime-env";
 
 function metaString(value: unknown): string {
   return value == null ? "" : String(value);
@@ -13,7 +14,7 @@ export async function confirmLocalStanleyPayment(opts: {
   slot: number;
   paymentId?: string;
 }) {
-  if (process.env.NODE_ENV === "production") {
+  if (isProductionRuntime) {
     return { applied: false, reason: "production" as const };
   }
   if (!opts.url || !isValidStanleySlot(opts.slot)) {
