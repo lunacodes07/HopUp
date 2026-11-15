@@ -53,3 +53,15 @@ next-env.d.ts
 /src/app/brandmybackpack/
 /src/components/brand-my-stuff/BackpackExperience.tsx
 /src/components/brand-my-stuff/BackpackViewer.tsx
+/dist/
+.vinext/
+.cloudflare/
+.wrangler/
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example

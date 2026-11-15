@@ -9,30 +9,12 @@ import { getProxiedLogoUrl, handleLogoError } from "@/lib/logo";
 import { withHopupRef } from "@/lib/product-path";
 import { rememberPendingShare } from "@/lib/share";
 import { DEFAULT_CATEGORY, PRODUCT_CATEGORIES } from "@/lib/categories";
-import { HOUSE_SPONSOR, SPONSOR_PLANS, SPONSOR_SLOT_COUNT, type SponsorPlan } from "@/lib/sponsored";
+import { SPONSOR_PLANS, SPONSOR_SLOT_COUNT, type SponsorPlan } from "@/lib/sponsored";
 import type { SponsoredSlot } from "@/types";
 
 const SPOTS = Array.from({ length: SPONSOR_SLOT_COUNT }, (_, i) => i + 1);
-const houseSponsor = HOUSE_SPONSOR;
-const SPOT_ORDER = houseSponsor
-  ? [houseSponsor.slot, ...SPOTS.filter((n) => n !== houseSponsor.slot)]
-  : SPOTS;
-const OPEN_SPOTS = SPONSOR_SLOT_COUNT - (houseSponsor ? 1 : 0);
-
-const HOUSE_LISTING: SponsoredSlot | null = houseSponsor
-  ? {
-      id: "house-sponsor",
-      slot_number: houseSponsor.slot,
-      name: houseSponsor.name,
-      description: houseSponsor.description,
-      category: houseSponsor.category,
-      url: houseSponsor.url,
-      clicks: 0,
-      price: 0,
-      weeks: 0,
-      expires_at: "2099-01-01T00:00:00.000Z",
-    }
-  : null;
+const SPOT_ORDER = SPOTS;
+const OPEN_SPOTS = SPONSOR_SLOT_COUNT;
 
 const getTimeLeft = (expiresAt: string) => {
   const ms = new Date(expiresAt).getTime() - Date.now();
@@ -89,12 +71,9 @@ function EmptyCard({
 }
 
 function FilledCard({ slot, large }: { slot: SponsoredSlot; large?: boolean }) {
-  const house = slot.price <= 0;
-  // The house link already carries its own referral. Don't add HopUp's ref on top.
-  const href = house ? slot.url : (withHopupRef(slot.url) || slot.url);
+  const href = withHopupRef(slot.url) || slot.url;
 
   const trackClick = () => {
-    if (house) return;
     supabase.rpc("increment_sponsored_clicks", { p_slot_id: slot.id }).then(({ error }) => {
       if (error) console.error("Failed to track sponsored click:", error.message);
     });
@@ -118,15 +97,13 @@ function FilledCard({ slot, large }: { slot: SponsoredSlot; large?: boolean }) {
       <span className={`absolute left-2 font-semibold uppercase leading-none tracking-[0.12em] text-secondary/65 ${
         large ? "top-2 text-[10px]" : "top-1 text-[8px]"
       }`}>
-        {house ? "Featured" : "Ad"}
+        Ad
       </span>
-      {!house && (
-        <span className={`absolute right-2 leading-none tabular-nums text-secondary/65 ${
-          large ? "top-2 text-[11px]" : "top-1 text-[8px]"
-        }`}>
-          {getTimeLeft(slot.expires_at)}
-        </span>
-      )}
+      <span className={`absolute right-2 leading-none tabular-nums text-secondary/65 ${
+        large ? "top-2 text-[11px]" : "top-1 text-[8px]"
+      }`}>
+        {getTimeLeft(slot.expires_at)}
+      </span>
       <div className={`relative shrink-0 overflow-hidden rounded-lg bg-muted ${
         large ? "h-12 w-12 rounded-xl" : "h-8 w-8"
       }`}>
@@ -455,7 +432,7 @@ export default function SponsoredSlots({ variant = "default" }: { variant?: "def
   const sidebar = variant === "sidebar";
 
   const renderCard = (n: number, key: string, wide: boolean, hidden = false) => {
-    const listing = n === HOUSE_LISTING?.slot_number ? HOUSE_LISTING : bySlot.get(n);
+    const listing = bySlot.get(n);
     return (
       <div key={key} aria-hidden={hidden || undefined} className={wide ? "w-[72vw] max-w-[300px] shrink-0" : "w-full min-w-0"}>
         {listing ? (

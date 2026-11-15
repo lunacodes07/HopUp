@@ -1,12 +1,23 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
+import localFont from "next/font/local";
 import SceneBackdrop from "@/components/SceneBackdrop";
 import "./globals.css";
 
-const outfit = Outfit({
+const outfit = localFont({
   variable: "--font-outfit",
-  subsets: ["latin"],
+  display: "swap",
+  src: [
+    {
+      path: "../lib/fonts/Outfit-SemiBold.ttf",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../lib/fonts/Outfit-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+  ],
 });
 
 export const metadata: Metadata = {
@@ -46,7 +57,6 @@ export default function RootLayout({
       <body className="relative min-h-screen bg-background text-foreground antialiased selection:bg-accent/30 selection:text-foreground">
         <SceneBackdrop />
         {children}
-        <Analytics />
       </body>
     </html>
   );

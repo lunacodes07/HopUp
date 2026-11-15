@@ -3,7 +3,19 @@ import { test } from "node:test";
 import { clientIp } from "./client-ip.ts";
 import { voterHash } from "./voter-hash.ts";
 
-test("client ip prefers vercel, then first forwarded hop", () => {
+test("client ip prefers Cloudflare, then Vercel, then forwarded hops", () => {
+  assert.equal(
+    clientIp(
+      new Request("https://hopup.lol/api/upvote", {
+        headers: {
+          "cf-connecting-ip": "4.4.4.4",
+          "x-vercel-forwarded-for": "8.8.8.8",
+          "x-forwarded-for": "1.1.1.1, 2.2.2.2",
+        },
+      })
+    ),
+    "4.4.4.4"
+  );
   assert.equal(
     clientIp(
       new Request("https://hopup.lol/api/upvote", {

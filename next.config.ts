@@ -8,7 +8,6 @@ function cacheHeaders(value: string) {
   return [
     { key: "Cache-Control", value },
     { key: "CDN-Cache-Control", value },
-    { key: "Vercel-CDN-Cache-Control", value },
   ];
 }
 
@@ -36,3 +35,5 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());
