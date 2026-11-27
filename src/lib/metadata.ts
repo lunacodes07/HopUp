@@ -13,16 +13,19 @@ async function readLimitedText(response: Response): Promise<string | null> {
   let total = 0;
 
   try {
-    while (true) {
+    while (total < MAX_HTML_BYTES) {
       const { done, value } = await reader.read();
       if (done) break;
-      if (!value) continue;
-      total += value.byteLength;
-      if (total > MAX_HTML_BYTES) {
-        await reader.cancel();
-        return null;
+      if (!value?.byteLength) continue;
+      const room = MAX_HTML_BYTES - total;
+      if (value.byteLength > room) {
+        chunks.push(value.subarray(0, room));
+        total += room;
+        await reader.cancel().catch(() => undefined);
+        break;
       }
       chunks.push(value);
+      total += value.byteLength;
     }
   } finally {
     reader.releaseLock();
